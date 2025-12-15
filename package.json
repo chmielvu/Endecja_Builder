@@ -23,7 +23,9 @@
     "zustand": "^4.5.0",
     "lucide-react": "^0.309.0",
     "clsx": "^2.1.0",
-    "tailwind-merge": "^2.2.0"
+    "tailwind-merge": "^2.2.0",
+    "buffer": "^6.0.3",
+    "long": "^5.2.3"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",

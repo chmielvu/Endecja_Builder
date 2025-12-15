@@ -31,7 +31,7 @@ export interface Provenance {
 
 export interface NodeAttributes {
   label: string;
-  type: NodeType;
+  category: NodeType; // Renamed from type to avoid conflict with Sigma's reserved 'type'
   description?: string;
   jurisdiction: Jurisdiction;
   valid_time: DateRange;

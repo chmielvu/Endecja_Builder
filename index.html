@@ -16,7 +16,21 @@
         versions: {},
         platform: 'browser'
       };
+      
+      // POLYFILL: Global Buffer
+      if (typeof window.global === 'undefined') {
+        window.global = window;
+      }
+    </script>
+    <!-- Load Buffer from CDN for immediate availability -->
+    <script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.min.js"></script>
+    <script>
+      if (!window.Buffer && window.buffer) {
+        window.Buffer = window.buffer.Buffer;
+      }
+    </script>
 
+    <script>
       tailwind.config = {
         theme: {
           extend: {

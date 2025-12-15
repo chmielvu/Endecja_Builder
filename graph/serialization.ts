@@ -13,7 +13,8 @@ export function exportGraphToJSON(graph: MultiDirectedGraph<NodeAttributes, Edge
     nodes: graph.mapNodes((node, attrs) => ({
       id: node,
       label: attrs.label,
-      type: attrs.type,
+      type: attrs.category, // Map category back to type for standard JSON
+      category: attrs.category,
       jurisdiction: attrs.jurisdiction,
       dates: `${attrs.valid_time.start}-${attrs.valid_time.end}`,
       importance: (attrs.size || 10) / 20, // Reverse engineer from size

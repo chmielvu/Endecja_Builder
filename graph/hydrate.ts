@@ -125,11 +125,11 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
 
     const valid_time = parseDateRange(n.dates);
     const jurisdiction = determineJurisdiction(id, n.label || id);
-    const nodeType = mapNodeType(n.type);
+    const nodeType = mapNodeType(n.type || n.category); // Handle both formats
 
     const attributes: NodeAttributes = {
       label: n.label || id,
-      type: nodeType,
+      category: nodeType, // Renamed from type
       description: n.description,
       jurisdiction: jurisdiction,
       valid_time: valid_time,
@@ -189,7 +189,7 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
       if (!graph.hasNode(mythId)) {
         const attributes: NodeAttributes = {
           label: myth.title,
-          type: NodeType.MYTH,
+          category: NodeType.MYTH, // Renamed
           description: `MIT: ${myth.claim}\n\nPRAWDA: ${myth.truth}`,
           jurisdiction: Jurisdiction.OTHER,
           valid_time: { start: 1890, end: 1945 },

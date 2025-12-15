@@ -71,7 +71,7 @@ const ViewMode: React.FC<{attrs: NodeAttributes, onEdit: () => void, nodeId: str
   return (
     <div className="space-y-4">
        <div className="text-sm">
-          <span className="text-archival-sepia italic">{attrs.type} | {attrs.jurisdiction}</span>
+          <span className="text-archival-sepia italic">{attrs.category} | {attrs.jurisdiction}</span>
        </div>
        <div className="text-sm">
           <span className="font-bold">Active: </span>
@@ -108,7 +108,7 @@ const EditMode: React.FC<{nodeId: string, attrs: NodeAttributes, onSave: () => v
   const { graph, refresh, selectNode } = useGraphStore();
   const [formData, setFormData] = useState({
       label: attrs.label,
-      type: attrs.type,
+      category: attrs.category,
       jurisdiction: attrs.jurisdiction,
       start: attrs.valid_time.start,
       end: attrs.valid_time.end,
@@ -118,7 +118,7 @@ const EditMode: React.FC<{nodeId: string, attrs: NodeAttributes, onSave: () => v
   const handleSave = () => {
     graph.mergeNodeAttributes(nodeId, {
         label: formData.label,
-        type: formData.type,
+        category: formData.category,
         jurisdiction: formData.jurisdiction,
         valid_time: { start: formData.start, end: formData.end },
         secrecy_level: formData.secrecy
@@ -143,8 +143,8 @@ const EditMode: React.FC<{nodeId: string, attrs: NodeAttributes, onSave: () => v
         </div>
         <div className="grid grid-cols-2 gap-2">
             <div>
-                <label className="block text-xs font-bold text-archival-sepia">Type</label>
-                <select className="w-full p-1 border rounded bg-white" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as NodeType})}>
+                <label className="block text-xs font-bold text-archival-sepia">Category</label>
+                <select className="w-full p-1 border rounded bg-white" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value as NodeType})}>
                     {Object.values(NodeType).map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
             </div>
@@ -181,7 +181,7 @@ const EditMode: React.FC<{nodeId: string, attrs: NodeAttributes, onSave: () => v
 const NodeCreator: React.FC<{onSave: () => void}> = ({ onSave }) => {
   const { graph, refresh } = useGraphStore();
   const [label, setLabel] = useState('');
-  const [type, setType] = useState<NodeType>(NodeType.PERSON);
+  const [category, setCategory] = useState<NodeType>(NodeType.PERSON);
   const [jurisdiction, setJurisdiction] = useState<Jurisdiction>(Jurisdiction.KONGRESOWKA);
   const [startYear, setStartYear] = useState(1900);
   const [endYear, setEndYear] = useState(1939);
@@ -195,13 +195,13 @@ const NodeCreator: React.FC<{onSave: () => void}> = ({ onSave }) => {
     
     graph.addNode(id, {
       label,
-      type,
+      category,
       jurisdiction,
       valid_time: { start: startYear, end: endYear },
       x: x,
       y: y,
       size: 15,
-      color: type === NodeType.PERSON ? '#2c241b' : '#8b0000',
+      color: category === NodeType.PERSON ? '#2c241b' : '#8b0000',
       financial_weight: 0.5,
       secrecy_level: 1,
       provenance: {
@@ -232,8 +232,8 @@ const NodeCreator: React.FC<{onSave: () => void}> = ({ onSave }) => {
           />
 
           <select 
-            value={type} 
-            onChange={e => setType(e.target.value as NodeType)}
+            value={category} 
+            onChange={e => setCategory(e.target.value as NodeType)}
             className="w-full p-2 border border-archival-sepia rounded"
           >
             {Object.values(NodeType).map(t => (

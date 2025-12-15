@@ -44,7 +44,7 @@ export const DocumentUploader: React.FC = () => {
       if (!graph.hasNode(node.id)) {
         graph.addNode(node.id, {
             label: node.label,
-            type: node.type as NodeType,
+            category: node.type as NodeType, // Map extracted type to category
             jurisdiction: Jurisdiction.OTHER,
             valid_time: { start: startYear, end: endYear },
             x: Math.random() * 20 - 10,

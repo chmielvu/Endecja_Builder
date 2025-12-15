@@ -42,8 +42,8 @@ class EmbeddingService {
     // Process sequentially to avoid memory spikes in browser
     for (const node of nodes) {
       const attrs = graph.getNodeAttributes(node);
-      // Construct a rich textual representation
-      const text = `Label: ${attrs.label}. Type: ${attrs.type}. Jurisdiction: ${attrs.jurisdiction}. Secrecy Level: ${attrs.secrecy_level}.`;
+      // Construct a rich textual representation using category
+      const text = `Label: ${attrs.label}. Type: ${attrs.category}. Jurisdiction: ${attrs.jurisdiction}. Secrecy Level: ${attrs.secrecy_level}.`;
       
       // Basic cache check (if already has vector, skip)
       if (!attrs.radicalization_vector) {

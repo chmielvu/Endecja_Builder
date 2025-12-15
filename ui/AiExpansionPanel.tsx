@@ -56,7 +56,7 @@ export const AiExpansionPanel: React.FC = () => {
     if (!graph.hasNode(node.id)) {
         graph.addNode(node.id, {
         label: node.label,
-        type: node.type as NodeType,
+        category: node.type as NodeType, // Map suggestion type to category
         description: node.description,
         jurisdiction: Jurisdiction.OTHER,
         valid_time: { start: startYear, end: endYear },

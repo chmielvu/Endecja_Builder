@@ -8,11 +8,16 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    resolve: {
+      alias: {
+        buffer: 'buffer/',
+      },
+    },
     define: {
       // Inject API Key specifically
       'process.env.API_KEY': JSON.stringify(env.API_KEY),
-      // Do NOT define 'process.env': {} here as it might conflict with the window.process polyfill in index.html
-      // Instead, we rely on the window.process polyfill for general process access.
+      // Fix for some libraries expecting global
+      'global': 'window',
     },
     worker: {
       format: 'es',

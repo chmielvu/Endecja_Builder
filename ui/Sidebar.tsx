@@ -137,7 +137,7 @@ export const Sidebar: React.FC = () => {
     try {
       const nodes = graph.nodes().map(n => ({
         label: graph.getNodeAttribute(n, 'label'),
-        type: graph.getNodeAttribute(n, 'type')
+        type: graph.getNodeAttribute(n, 'category') // Use category
       }));
       
       // Limit edges for context size if necessary, but 100-200 edges fits easily

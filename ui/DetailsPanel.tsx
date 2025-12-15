@@ -15,7 +15,7 @@ export const DetailsPanel: React.FC = () => {
       <div className="p-4 border-b border-archival-sepia/20 flex justify-between items-start bg-archival-ink/5">
         <div>
           <h2 className="text-xl font-bold text-archival-ink leading-tight">{attrs.label}</h2>
-          <span className="text-sm italic text-archival-sepia">{attrs.type} | {attrs.jurisdiction}</span>
+          <span className="text-sm italic text-archival-sepia">{attrs.category} | {attrs.jurisdiction}</span>
         </div>
         <button onClick={() => selectNode(null)} className="text-archival-sepia hover:text-archival-accent">
           <X size={20} />
