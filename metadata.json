@@ -1,0 +1,5 @@
+{
+  "name": "Endecja Graph",
+  "description": "A client-side neuro-symbolic graph engine modeling the Polish National Democracy network using Graphology, Sigma.js, and TensorFlow.js.",
+  "requestFramePermissions": []
+}
