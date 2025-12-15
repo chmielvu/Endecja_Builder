@@ -70,8 +70,18 @@
         background: #704214;
         border-radius: 4px;
       }
+      /* Sigma.js canvas aesthetic */
+      .sigma-graph {
+        mix-blend-mode: multiply; /* Fuses the graph ink with the background texture */
+        opacity: 0.9;
+      }
+      /* Custom font and shadow for labels */
+      .sigma-node-label, .sigma-edge-label {
+        font-family: 'Crimson Text', serif !important; /* Enforce 1930s typography */
+        text-shadow: 0px 0px 2px #f4e4bc; /* Halo to read text over edges */
+      }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=IBM+Plex+Sans:wght@400;600&family=Courier+Prime&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=IBM+Plex+Sans:wght@400;600&family=Courier+Prime&family=Crimson+Text:wght@400;700&display=swap" rel="stylesheet">
 <script type="importmap">
 {
   "imports": {

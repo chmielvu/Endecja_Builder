@@ -24,7 +24,8 @@ export interface DateRange {
 export interface Provenance {
   source: string;
   confidence: number; // 0.0 to 1.0
-  method: 'archival' | 'inference' | 'interpolation';
+  method: 'archival' | 'inference' | 'interpolation'; // How data was obtained
+  sourceClassification: 'primary' | 'secondary' | 'hostile' | 'myth' | 'ai_inference'; // Nature of the source itself
   model_tag?: string;
   timestamp: number;
 }

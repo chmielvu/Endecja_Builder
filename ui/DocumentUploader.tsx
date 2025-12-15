@@ -57,6 +57,7 @@ export const DocumentUploader: React.FC = () => {
             source: `AI Extraction from ${fileName}`,
             confidence: 0.8,
             method: 'inference',
+            sourceClassification: 'ai_inference', // Set to AI inference
             timestamp: Date.now()
             }
         });
@@ -78,6 +79,7 @@ export const DocumentUploader: React.FC = () => {
             source: `AI Extraction from ${fileName}`,
             confidence: 0.7,
             method: 'inference',
+            sourceClassification: 'ai_inference', // Set to AI inference
             timestamp: Date.now()
           }
         });

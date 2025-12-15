@@ -70,6 +70,7 @@ export const AiExpansionPanel: React.FC = () => {
             source: 'AI Expansion (Gemini)',
             confidence: 0.75,
             method: 'inference',
+            sourceClassification: 'ai_inference', // Set to AI inference
             timestamp: Date.now()
         }
         });
@@ -94,6 +95,7 @@ export const AiExpansionPanel: React.FC = () => {
                 source: 'AI Expansion (Gemini)',
                 confidence: 0.7,
                 method: 'inference',
+                sourceClassification: 'ai_inference', // Set to AI inference
                 timestamp: Date.now()
             }
             });

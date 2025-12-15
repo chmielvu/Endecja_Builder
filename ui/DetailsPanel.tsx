@@ -3,6 +3,20 @@ import { useGraphStore } from '../state/graphStore';
 import { ProvenanceBadge } from './ProvenanceBadge';
 import { X } from 'lucide-react';
 
+// Basic Markdown renderer (no external libs)
+function renderMarkdownToHtml(markdown: string): string {
+  let html = markdown;
+  // Bold: **text**
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  // Italic: *text*
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  // Links: [link text](url)
+  html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="text-archival-navy hover:underline">$1</a>');
+  // Newlines to <br/>
+  html = html.replace(/\n/g, '<br/>');
+  return html;
+}
+
 export const DetailsPanel: React.FC = () => {
   const { graph, selectedNode, selectNode } = useGraphStore();
 
@@ -23,11 +37,12 @@ export const DetailsPanel: React.FC = () => {
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Description */}
+        {/* Description with Markdown support */}
         {attrs.description && (
-          <div className="text-sm italic text-archival-ink/80 border-l-2 border-archival-accent pl-2">
-            {attrs.description}
-          </div>
+          <div 
+            className="text-sm italic text-archival-ink/80 border-l-2 border-archival-accent pl-2"
+            dangerouslySetInnerHTML={{ __html: renderMarkdownToHtml(attrs.description) }}
+          />
         )}
 
         {/* Valid Time */}

@@ -143,6 +143,7 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
         source: 'Endecja Database v1.0',
         confidence: 1.0,
         method: 'archival',
+        sourceClassification: n.myth_related ? 'myth' : 'primary', // Dynamically set source classification
         timestamp: Date.now()
       }
     };
@@ -170,6 +171,7 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
           source: 'Endecja Database v1.0',
           confidence: 1.0,
           method: 'archival',
+          sourceClassification: 'primary', // Default for edges
           timestamp: Date.now()
         }
       };
@@ -203,6 +205,7 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
             source: 'Historical Analysis (Myths)',
             confidence: 1.0,
             method: 'inference',
+            sourceClassification: 'myth', // Explicitly 'myth' for myths
             timestamp: Date.now()
           }
         };
@@ -226,6 +229,7 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
                   source: 'Myth Analysis',
                   confidence: 1.0,
                   method: 'inference',
+                  sourceClassification: 'myth', // Edges related to myths are also 'myth'
                   timestamp: Date.now()
                 }
               });

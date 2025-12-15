@@ -176,6 +176,7 @@ KONTEKST:
 - Istniejące węzły: ${existingNodeIds.join(', ')}
 
 Zaproponuj 3-5 nowych węzłów (osoby, wydarzenia, publikacje, organizacje) historycznie powiązanych z "${nodeLabel}".
+Dodaj 'sourceClassification': 'ai_inference' do wszystkich nowych węzłów i krawędzi.
 
 Zwróć TYLKO poprawny JSON w formacie z poprzedniego przykładu.
 `;
