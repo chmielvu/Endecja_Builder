@@ -11,7 +11,7 @@ export const DetailsPanel: React.FC = () => {
   const attrs = graph.getNodeAttributes(selectedNode);
 
   return (
-    <div className="absolute right-4 top-4 w-80 bg-archival-paper border-2 border-archival-sepia shadow-xl rounded-sm font-serif max-h-[90vh] overflow-y-auto">
+    <div className="absolute right-4 top-4 w-80 bg-archival-paper border-2 border-archival-sepia shadow-xl rounded-sm font-serif max-h-[90vh] overflow-y-auto z-20">
       <div className="p-4 border-b border-archival-sepia/20 flex justify-between items-start bg-archival-ink/5">
         <div>
           <h2 className="text-xl font-bold text-archival-ink leading-tight">{attrs.label}</h2>
@@ -23,6 +23,13 @@ export const DetailsPanel: React.FC = () => {
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Description */}
+        {attrs.description && (
+          <div className="text-sm italic text-archival-ink/80 border-l-2 border-archival-accent pl-2">
+            {attrs.description}
+          </div>
+        )}
+
         {/* Valid Time */}
         <div className="text-sm">
           <span className="font-bold">Active Period: </span>

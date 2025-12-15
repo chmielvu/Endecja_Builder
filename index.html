@@ -7,21 +7,34 @@
     <title>Endecja Graph | Neuro-Symbolic Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+      // POLYFILL: Define global process object to prevent libraries (like Graphology/Transformers) from crashing
+      window.process = {
+        env: {
+          NODE_ENV: 'development'
+        },
+        version: '',
+        versions: {},
+        platform: 'browser'
+      };
+
       tailwind.config = {
         theme: {
           extend: {
             colors: {
               archival: {
-                paper: '#f4e4bc',
+                paper: '#f5f5dc',
                 ink: '#2c241b',
                 sepia: '#704214',
-                accent: '#8b0000',
+                accent: '#dc143c',
+                navy: '#1e3a5f',
+                gold: '#d4af37',
                 faint: 'rgba(112, 66, 20, 0.1)'
               }
             },
             fontFamily: {
-              serif: ['"Times New Roman"', 'serif'],
-              sans: ['system-ui', 'sans-serif'],
+              serif: ['"Playfair Display"', 'serif'],
+              sans: ['"IBM Plex Sans"', 'sans-serif'],
+              mono: ['"Courier Prime"', 'monospace']
             }
           }
         }
@@ -29,7 +42,7 @@
     </script>
     <style>
       body {
-        background-color: #f4e4bc;
+        background-color: #f5f5dc;
         color: #2c241b;
       }
       /* Custom scrollbar for archival feel */
@@ -44,23 +57,26 @@
         border-radius: 4px;
       }
     </style>
-  <script type="importmap">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=IBM+Plex+Sans:wght@400;600&family=Courier+Prime&display=swap" rel="stylesheet">
+<script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
-    "@xenova/transformers": "https://esm.sh/@xenova/transformers@^2.17.2",
-    "vite": "https://esm.sh/vite@^7.3.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "zustand": "https://esm.sh/zustand@^5.0.9",
-    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
-    "@tensorflow/tfjs": "https://esm.sh/@tensorflow/tfjs@^4.22.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "vite": "https://esm.sh/vite@^7.3.0",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "zustand": "https://esm.sh/zustand@^5.0.9",
     "graphology": "https://esm.sh/graphology@^0.26.0",
-    "sigma": "https://esm.sh/sigma@^3.0.2",
     "graphology-layout-forceatlas2": "https://esm.sh/graphology-layout-forceatlas2@^0.10.1",
     "graphology-communities-louvain": "https://esm.sh/graphology-communities-louvain@^2.0.2",
-    "graphology-metrics/": "https://esm.sh/graphology-metrics@^2.4.0/"
+    "graphology-metrics/": "https://esm.sh/graphology-metrics@^2.4.0/",
+    "@xenova/transformers": "https://esm.sh/@xenova/transformers@^2.17.2",
+    "@tensorflow/tfjs": "https://esm.sh/@tensorflow/tfjs@^4.22.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+    "sigma": "https://esm.sh/sigma@^3.0.2",
+    "sigma/": "https://esm.sh/sigma@^3.0.2/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.33.0"
   }
 }
 </script>

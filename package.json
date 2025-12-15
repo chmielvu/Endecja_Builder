@@ -19,6 +19,7 @@
     "graphology-types": "^0.24.0",
     "@xenova/transformers": "^2.14.0",
     "@tensorflow/tfjs": "^4.16.0",
+    "@google/genai": "^0.1.0",
     "zustand": "^4.5.0",
     "lucide-react": "^0.309.0",
     "clsx": "^2.1.0",

@@ -1,5 +1,5 @@
 import { MultiDirectedGraph } from 'graphology';
-import { GraphData, NodeAttributes, EdgeAttributes, NodeType, Jurisdiction, Provenance, DateRange } from '../types';
+import { GraphData, NodeAttributes, EdgeAttributes, GraphAttributes, NodeType, Jurisdiction, Provenance, DateRange } from '../types';
 import { GLOBAL_SEED, SeededRandom } from '../utils/seeds';
 import { seedData } from './seedData';
 
@@ -18,15 +18,6 @@ function validateNodeSchema(node: any): boolean {
     console.warn('Invalid node: Missing or invalid ID/Key', node);
     return false;
   }
-  
-  // For seed data, 'label' is usually required at top level. 
-  // For Graphology export, it's inside attributes.
-  // We'll be lenient here as this validator is primarily used during hydration of raw data.
-  if (node.label && typeof node.label !== 'string') {
-     console.warn(`Node ${id}: Invalid label type`);
-     return false;
-  }
-
   return true;
 }
 
@@ -83,7 +74,8 @@ function mapNodeType(typeStr?: string): NodeType {
     case 'organization': return NodeType.ORGANIZATION;
     case 'event': return NodeType.EVENT;
     case 'publication': return NodeType.PUBLICATION;
-    case 'concept': return NodeType.EVENT; // Mapping concept to Event for now, or could add CONCEPT to enum
+    case 'concept': return NodeType.CONCEPT;
+    case 'myth': return NodeType.MYTH;
     default: return NodeType.LOCATION;
   }
 }
@@ -94,20 +86,32 @@ function determineEdgeSign(rel: string): 1 | -1 | 0 {
   return 1;
 }
 
-// --- Main Functions ---
-
-export function createEmptyGraph(): MultiDirectedGraph<NodeAttributes, EdgeAttributes> {
-  return new MultiDirectedGraph<NodeAttributes, EdgeAttributes>();
+function getNodeColor(type: NodeType): string {
+  switch (type) {
+    case NodeType.PERSON: return '#2c241b'; // Ink
+    case NodeType.ORGANIZATION: return '#8b0000'; // Dark Red
+    case NodeType.CONCEPT: return '#1e3a5f'; // Navy
+    case NodeType.EVENT: return '#d4af37'; // Gold
+    case NodeType.PUBLICATION: return '#704214'; // Sepia
+    case NodeType.MYTH: return '#7b2cbf'; // Myth Purple
+    default: return '#704214';
+  }
 }
 
-export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, EdgeAttributes> {
-  const graph = new MultiDirectedGraph<NodeAttributes, EdgeAttributes>();
+// --- Main Functions ---
+
+export function createEmptyGraph(): MultiDirectedGraph<NodeAttributes, EdgeAttributes, GraphAttributes> {
+  return new MultiDirectedGraph<NodeAttributes, EdgeAttributes, GraphAttributes>();
+}
+
+export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, EdgeAttributes, GraphAttributes> {
+  const graph = new MultiDirectedGraph<NodeAttributes, EdgeAttributes, GraphAttributes>();
   
   // Use provided data or fallback to seedData
   const nodes = data.nodes || seedData.nodes;
   const edges = data.edges || seedData.edges;
 
-  // Bulk Import Nodes
+  // 1. Bulk Import Nodes
   nodes.forEach((n: any) => {
     if (!validateNodeSchema(n)) return;
 
@@ -121,16 +125,18 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
 
     const valid_time = parseDateRange(n.dates);
     const jurisdiction = determineJurisdiction(id, n.label || id);
+    const nodeType = mapNodeType(n.type);
 
     const attributes: NodeAttributes = {
       label: n.label || id,
-      type: mapNodeType(n.type),
+      type: nodeType,
+      description: n.description,
       jurisdiction: jurisdiction,
       valid_time: valid_time,
       x: x,
       y: y,
       size: (n.importance || 0.5) * 15 + 5,
-      color: n.type === 'person' ? '#2c241b' : (n.type === 'organization' ? '#8b0000' : '#704214'),
+      color: getNodeColor(nodeType),
       financial_weight: rng.range(0.1, 1.0),
       secrecy_level: n.type === 'organization' && (n.label?.includes('Liga') || n.label?.includes('Zet')) ? 5 : 1,
       provenance: {
@@ -146,7 +152,7 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
     }
   });
 
-  // Bulk Import edges
+  // 2. Bulk Import Edges
   edges.forEach((e: any, idx: number) => {
     if (!validateEdgeSchema(e)) return;
 
@@ -155,7 +161,7 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
       const sign = determineEdgeSign(e.relationship || '');
       
       const attributes: EdgeAttributes = {
-        type: 'arrow',
+        type: e.relationship || 'arrow',
         weight: 1,
         sign: sign,
         valid_time: valid_time,
@@ -175,10 +181,71 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
     }
   });
 
+  // 3. Process Myths as Nodes and Connect to Related Nodes
+  if (data.myths && Array.isArray(data.myths)) {
+    data.myths.forEach((myth: any) => {
+      // Create Myth Node
+      const mythId = myth.id;
+      if (!graph.hasNode(mythId)) {
+        const attributes: NodeAttributes = {
+          label: myth.title,
+          type: NodeType.MYTH,
+          description: `MIT: ${myth.claim}\n\nPRAWDA: ${myth.truth}`,
+          jurisdiction: Jurisdiction.OTHER,
+          valid_time: { start: 1890, end: 1945 },
+          x: rng.range(-30, 30),
+          y: rng.range(-30, 30),
+          size: 25, // Myths are prominent
+          color: getNodeColor(NodeType.MYTH),
+          financial_weight: 0,
+          secrecy_level: 1,
+          provenance: {
+            source: 'Historical Analysis (Myths)',
+            confidence: 1.0,
+            method: 'inference',
+            timestamp: Date.now()
+          }
+        };
+        graph.addNode(mythId, attributes);
+      }
+
+      // Create Edges to Related Nodes
+      if (myth.relatedNodes && Array.isArray(myth.relatedNodes)) {
+        myth.relatedNodes.forEach((targetId: string) => {
+          if (graph.hasNode(targetId)) {
+            const edgeKey = `edge_myth_${mythId}_${targetId}`;
+            if (!graph.hasEdge(edgeKey)) {
+              graph.addEdgeWithKey(edgeKey, mythId, targetId, {
+                type: 'dotyczy', // 'relates to'
+                weight: 2,
+                sign: 0, // Neutral/Informational
+                valid_time: { start: 1890, end: 1945 },
+                is_hypothetical: false,
+                color: '#7b2cbf', // Match myth node color
+                provenance: {
+                  source: 'Myth Analysis',
+                  confidence: 1.0,
+                  method: 'inference',
+                  timestamp: Date.now()
+                }
+              });
+            }
+          }
+        });
+      }
+    });
+  }
+
+  // 4. Attach Global Attributes
+  if (data.metadata) graph.setAttribute('metadata', data.metadata);
+  if (data.timeline) graph.setAttribute('timeline', data.timeline);
+  if (data.sources) graph.setAttribute('sources', data.sources);
+  if (data.myths) graph.setAttribute('myths', data.myths);
+
   return graph;
 }
 
-export function fromJSON(jsonStr: string): MultiDirectedGraph<NodeAttributes, EdgeAttributes> {
+export function fromJSON(jsonStr: string): MultiDirectedGraph<NodeAttributes, EdgeAttributes, GraphAttributes> {
   let data;
   try {
     data = JSON.parse(jsonStr);
@@ -191,7 +258,7 @@ export function fromJSON(jsonStr: string): MultiDirectedGraph<NodeAttributes, Ed
   const isGraphologyExport = data.nodes && data.nodes.length > 0 && 'key' in data.nodes[0] && 'attributes' in data.nodes[0];
 
   if (isGraphologyExport) {
-    const graph = new MultiDirectedGraph<NodeAttributes, EdgeAttributes>();
+    const graph = new MultiDirectedGraph<NodeAttributes, EdgeAttributes, GraphAttributes>();
     try {
         graph.import(data);
         return graph;
@@ -204,7 +271,7 @@ export function fromJSON(jsonStr: string): MultiDirectedGraph<NodeAttributes, Ed
   return hydrateGraph(data);
 }
 
-export function toJSON(graph: MultiDirectedGraph<NodeAttributes, EdgeAttributes>): string {
+export function toJSON(graph: MultiDirectedGraph<NodeAttributes, EdgeAttributes, GraphAttributes>): string {
   return JSON.stringify(graph.export(), null, 2);
 }
 

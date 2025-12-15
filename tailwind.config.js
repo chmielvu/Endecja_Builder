@@ -8,16 +8,19 @@ export default {
     extend: {
       colors: {
         archival: {
-          paper: '#f4e4bc',
-          ink: '#2c241b',
-          sepia: '#704214',
-          accent: '#8b0000', // Deep red for emphasis
+          paper: '#f5f5dc',      // Beige paper
+          ink: '#2c241b',        // Dark brown ink
+          sepia: '#704214',      // Sepia brown
+          accent: '#dc143c',     // Polish flag red
+          navy: '#1e3a5f',       // Endecja blue
+          gold: '#d4af37',       // Catholic gold
           faint: 'rgba(112, 66, 20, 0.1)'
         }
       },
       fontFamily: {
-        serif: ['"Crimson Text"', 'serif'],
-        sans: ['"Inter"', 'sans-serif'],
+        serif: ['"Playfair Display"', 'serif'],
+        sans: ['"IBM Plex Sans"', 'sans-serif'],
+        mono: ['"Courier Prime"', 'monospace']
       }
     },
   },

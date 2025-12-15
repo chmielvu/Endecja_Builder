@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { MultiDirectedGraph } from 'graphology';
-import { NodeAttributes, EdgeAttributes, NodeType } from '../types';
+import { NodeAttributes, EdgeAttributes, GraphAttributes } from '../types';
 
 interface GraphState {
-  graph: MultiDirectedGraph<NodeAttributes, EdgeAttributes>;
+  graph: MultiDirectedGraph<NodeAttributes, EdgeAttributes, GraphAttributes>;
+  version: number; // Increment to force re-renders
   
   // UI State
   selectedNode: string | null;
@@ -17,7 +18,7 @@ interface GraphState {
   isEmbeddingLoaded: boolean;
   
   // Actions
-  setGraph: (graph: MultiDirectedGraph<NodeAttributes, EdgeAttributes>) => void;
+  setGraph: (graph: MultiDirectedGraph<NodeAttributes, EdgeAttributes, GraphAttributes>) => void;
   selectNode: (nodeId: string | null) => void;
   setHoveredNode: (nodeId: string | null) => void;
   setTimeFilter: (year: number) => void;
@@ -25,10 +26,12 @@ interface GraphState {
   setFrustrationIndex: (index: number) => void;
   setEmbeddingLoaded: (loaded: boolean) => void;
   updateNodeAttribute: (nodeId: string, key: keyof NodeAttributes, value: any) => void;
+  refresh: () => void;
 }
 
 export const useGraphStore = create<GraphState>((set) => ({
   graph: new MultiDirectedGraph(),
+  version: 0,
   selectedNode: null,
   hoveredNode: null,
   timeFilter: 1905,
@@ -37,7 +40,7 @@ export const useGraphStore = create<GraphState>((set) => ({
   frustrationIndex: null,
   isEmbeddingLoaded: false,
 
-  setGraph: (graph) => set({ graph }),
+  setGraph: (graph) => set({ graph, version: 0 }),
   selectNode: (nodeId) => set({ selectedNode: nodeId }),
   setHoveredNode: (nodeId) => set({ hoveredNode: nodeId }),
   setTimeFilter: (year) => set({ timeFilter: year }),
@@ -46,10 +49,7 @@ export const useGraphStore = create<GraphState>((set) => ({
   setEmbeddingLoaded: (loaded) => set({ isEmbeddingLoaded: loaded }),
   updateNodeAttribute: (nodeId, key, value) => set((state) => {
     state.graph.setNodeAttribute(nodeId, key, value);
-    // Force re-render if necessary by creating a shallow copy of graph container if needed,
-    // but typically Sigma observes the graph instance. 
-    // For React to trigger, we might need to toggle a version or spread.
-    // However, Graphology is mutable.
-    return { graph: state.graph };
-  })
+    return { graph: state.graph, version: state.version + 1 };
+  }),
+  refresh: () => set((state) => ({ version: state.version + 1 }))
 }));

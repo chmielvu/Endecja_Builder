@@ -3,7 +3,9 @@ export enum NodeType {
   ORGANIZATION = 'organization',
   EVENT = 'event',
   PUBLICATION = 'publication',
-  LOCATION = 'location'
+  LOCATION = 'location',
+  CONCEPT = 'concept',
+  MYTH = 'myth'
 }
 
 export enum Jurisdiction {
@@ -30,6 +32,7 @@ export interface Provenance {
 export interface NodeAttributes {
   label: string;
   type: NodeType;
+  description?: string;
   jurisdiction: Jurisdiction;
   valid_time: DateRange;
   x?: number;
@@ -55,10 +58,38 @@ export interface EdgeAttributes {
   sign: 1 | -1 | 0; // +1 Alliance, -1 Hostility, 0 Ambivalent
   valid_time: DateRange;
   
+  // Sigma.js rendering properties, often modified by reducers
+  color?: string;
+  size?: number;
+
   // Logic
   is_hypothetical: boolean;
   
   provenance: Provenance;
+}
+
+export interface TimelineEvent {
+  year: number;
+  label: string;
+  nodeId: string;
+  description: string;
+}
+
+export interface SourceReference {
+  id: string;
+  type: string;
+  title: string;
+  author?: string;
+  year?: number | string;
+  description?: string;
+  url?: string;
+}
+
+export interface GraphAttributes {
+  metadata?: any;
+  timeline?: TimelineEvent[];
+  sources?: SourceReference[];
+  myths?: any[];
 }
 
 export interface GraphData {
