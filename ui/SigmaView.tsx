@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import Graph from 'graphology';
 import Sigma from 'sigma';
 import { useGraphStore } from '../state/graphStore';
 import { GeoOverlay } from './GeoOverlay';
@@ -15,7 +14,6 @@ export const SigmaView: React.FC = () => {
     if (!containerRef.current) return;
 
     // Filter graph based on time before rendering
-    // We modify the 'hidden' attribute for visual filtering
     graph.forEachNode((node, attr) => {
         const isActive = attr.valid_time.start <= timeFilter && attr.valid_time.end >= timeFilter;
         graph.setNodeAttribute(node, 'hidden', !isActive);
@@ -27,16 +25,22 @@ export const SigmaView: React.FC = () => {
     });
 
     if (!sigmaRef.current) {
+      // [RAI @Techne] Initializing Sigma Instance with corrected settings
       sigmaRef.current = new Sigma(graph, containerRef.current, {
         minCameraRatio: 0.1,
         maxCameraRatio: 10,
         renderEdgeLabels: true,
+        renderLabels: true,
         allowInvalidContainer: true,
         defaultEdgeType: 'arrow',
-        edgeProgramClasses: {
-          // In a full implementation, we would register custom WebGL programs here.
-          // For this scaffold, we rely on standard renderers and visual hacks (color/alpha).
-        }
+        defaultNodeType: 'circle',
+        // CRITICAL FIX: Tell Sigma to look for a non-existent attribute for the program type.
+        // This forces it to fall back to 'defaultNodeType' ("circle") instead of reading
+        // our semantic "type" attribute (which contains "person", "organization", etc.)
+        nodeTypeAttribute: 'sigmaVisualType', 
+        zIndex: true,
+        labelFont: '"IBM Plex Sans", sans-serif',
+        labelRenderedSizeThreshold: 6,
       });
 
       // Event Listeners
@@ -54,49 +58,49 @@ export const SigmaView: React.FC = () => {
         document.body.style.cursor = 'default';
       });
       
-      // Node Reducer for LOD and Selection
+      // Node Reducer
       sigmaRef.current.setSetting('nodeReducer', (node, data) => {
-        const res: Partial<NodeAttributes> = { ...data };
+        const res: any = { ...data };
         
-        // Highlight logic could go here if selectedNode is passed to a ref or store subscription
+        // Ensure visual type is always 'circle' to prevent crashes with semantic types
+        res.type = 'circle';
         
-        // Semantic LOD: If zoomed out (ratio > 2), hide small nodes
-        // Note: We can't access camera easily in reducer without binding. 
-        // Sigma handles label density automatically.
-        // We'll trust Sigma's default label grid for text LOD.
-        
+        // Ensure label is preserved
+        res.label = data.label;
+
         return res;
       });
 
-      // Edge Reducer for Hypothetical Edges
+      // Edge Reducer
       sigmaRef.current.setSetting('edgeReducer', (edge, data) => {
-        const res: Partial<EdgeAttributes> & { color?: string; size?: number; hidden?: boolean } = { ...data };
+        const res: any = { ...data };
 
-        // Visual flag for hypothetical edges
+        // Force visual rendering to 'arrow'
+        res.type = 'arrow';
+
         if (data.is_hypothetical) {
-            // Make them dashed-like by using a very light color or specific tint
-            // Since we can't easily do dashed without custom shaders in v3 core setup quickly,
-            // we use transparency and color.
             res.color = 'rgba(100, 100, 100, 0.3)';
             res.size = (res.size || 1) * 0.5;
         } else {
-             // Sign-based coloring
-             if (data.sign === -1) res.color = '#dc143c'; // Hostile
-             else res.color = '#2c241b'; // Friendly
+             if (data.sign === -1) res.color = '#dc143c'; 
+             else res.color = '#2c241b';
         }
-
         return res;
       });
 
       setSigmaInstance(sigmaRef.current);
     } else {
-        // Refresh if needed
+        // Refresh graph data if version changed
         sigmaRef.current.refresh();
     }
 
     return () => {
-      // Cleanup handled by ref check or explicit kill if unmounting
-      // sigmaRef.current?.kill();
+      // Proper cleanup to support React StrictMode
+      if (sigmaRef.current) {
+        sigmaRef.current.kill();
+        sigmaRef.current = null;
+        setSigmaInstance(null);
+      }
     };
   }, [graph, timeFilter, selectNode, setHoveredNode, version]);
 

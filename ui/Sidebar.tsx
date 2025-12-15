@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useGraphStore } from '../state/graphStore';
 import { exportGraphToJSON, importGraphFromJSON } from '../graph/serialization';
-import { Play, Download, Brain, Share2, Upload, FileText, X, Search, Users } from 'lucide-react';
+import { Play, Download, Brain, Share2, Upload, FileText, X, Search, Users, HelpCircle } from 'lucide-react';
 import { embeddingService, searchByEmbedding } from '../ml/embeddings';
 import { summarizeGraphContent } from '../services/geminiService';
+import { Legend } from './Legend';
 
 export const Sidebar: React.FC = () => {
   const { graph, setGraph, isLoading, setLoading, setEmbeddingLoaded, isEmbeddingLoaded, frustrationIndex, setFrustrationIndex, selectNode, refresh } = useGraphStore();
@@ -11,6 +12,7 @@ export const Sidebar: React.FC = () => {
   const [summaryText, setSummaryText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{node: string, score: number}[]>([]);
+  const [showLegend, setShowLegend] = useState(false);
 
   const handleComputeEmbeddings = async () => {
     setLoading(true, 'Loading Transformers...');
@@ -236,6 +238,13 @@ export const Sidebar: React.FC = () => {
             </button>
 
             <button 
+              onClick={() => setShowLegend(true)}
+              className="w-full flex items-center gap-2 px-3 py-2 bg-white border border-archival-sepia text-archival-ink hover:bg-archival-paper transition-colors rounded text-sm"
+            >
+              <HelpCircle size={16} /> Show Legend
+            </button>
+
+            <button 
               onClick={() => exportGraphToJSON(graph)}
               className="w-full flex items-center gap-2 px-3 py-2 bg-transparent border border-dashed border-archival-sepia text-archival-sepia hover:text-archival-ink hover:border-solid transition-all rounded text-sm">
               <Download size={16} /> Export JSON
@@ -260,6 +269,8 @@ export const Sidebar: React.FC = () => {
           </div>
         )}
       </div>
+
+      {showLegend && <Legend onClose={() => setShowLegend(false)} />}
 
       {/* Summary Modal */}
       {showSummary && (
