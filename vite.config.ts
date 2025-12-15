@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     resolve: {
       alias: {
-        buffer: 'buffer/',
+        // Removed conflicting alias for 'buffer'
       },
     },
     define: {
@@ -23,6 +23,8 @@ export default defineConfig(({ mode }) => {
       format: 'es',
     },
     optimizeDeps: {
+      // Explicitly include polyfills for Node.js compatibility
+      include: ['buffer', 'long'], 
       exclude: ['@xenova/transformers']
     }
   };

@@ -161,7 +161,7 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
       const sign = determineEdgeSign(e.relationship || '');
       
       const attributes: EdgeAttributes = {
-        type: e.relationship || 'arrow',
+        relationshipType: e.relationship || 'arrow', // Use new name 'relationshipType'
         weight: 1,
         sign: sign,
         valid_time: valid_time,
@@ -216,7 +216,7 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
             const edgeKey = `edge_myth_${mythId}_${targetId}`;
             if (!graph.hasEdge(edgeKey)) {
               graph.addEdgeWithKey(edgeKey, mythId, targetId, {
-                type: 'dotyczy', // 'relates to'
+                relationshipType: 'dotyczy', // 'relates to' - Use new name
                 weight: 2,
                 sign: 0, // Neutral/Informational
                 valid_time: { start: 1890, end: 1945 },

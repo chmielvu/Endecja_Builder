@@ -69,7 +69,7 @@ export const DocumentUploader: React.FC = () => {
         // Generate a unique key for the edge if not provided
         const edgeKey = `edge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         graph.addEdgeWithKey(edgeKey, edge.source, edge.target, {
-          type: edge.relationship,
+          relationshipType: edge.relationship, // Use new name 'relationshipType'
           weight: 1,
           sign: 1, // Default to positive, could infer from relationship text
           valid_time: { start: 1900, end: 1939 },

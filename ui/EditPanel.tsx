@@ -290,15 +290,15 @@ const NodeCreator: React.FC<{onSave: () => void}> = ({ onSave }) => {
 const EdgeManager: React.FC<{nodeId: string}> = ({ nodeId }) => {
   const { graph, refresh } = useGraphStore();
   const [targetId, setTargetId] = useState('');
-  const [relationship, setRelationship] = useState('');
+  const [relationshipType, setRelationshipType] = useState(''); // Renamed state variable
 
   const allNodes = graph.nodes().filter(n => n !== nodeId);
 
   const handleAddEdge = () => {
-    if (!targetId || !relationship) return;
+    if (!targetId || !relationshipType) return;
 
     graph.addEdge(nodeId, targetId, {
-      type: relationship,
+      relationshipType: relationshipType, // Use new name
       weight: 1,
       sign: 1,
       valid_time: { start: 1900, end: 1939 },
@@ -312,7 +312,7 @@ const EdgeManager: React.FC<{nodeId: string}> = ({ nodeId }) => {
     });
     refresh();
     setTargetId('');
-    setRelationship('');
+    setRelationshipType(''); // Reset new state variable
   };
   
   const handleDropEdge = (edgeId: string) => {
@@ -320,29 +320,46 @@ const EdgeManager: React.FC<{nodeId: string}> = ({ nodeId }) => {
     refresh();
   };
 
+  const renderEdges = (edgeIds: string[], direction: 'in' | 'out') => {
+      return edgeIds.map(edgeId => {
+          const otherNodeId = direction === 'out' ? graph.target(edgeId) : graph.source(edgeId);
+          const otherNodeLabel = graph.getNodeAttribute(otherNodeId, 'label');
+          const relType = graph.getEdgeAttribute(edgeId, 'relationshipType'); // Use new name
+          
+          const relationshipDisplay = direction === 'out' 
+              ? <><span className="text-archival-sepia">{relType}</span> → {otherNodeLabel}</>
+              : <>{otherNodeLabel} → <span className="text-archival-sepia">{relType}</span></>;
+
+          return (
+              <div key={edgeId} className="flex justify-between items-center text-xs bg-white p-1.5 rounded border border-archival-sepia/10">
+                  <span>{relationshipDisplay}</span>
+                  <button 
+                      onClick={() => handleDropEdge(edgeId)}
+                      className="text-red-600 hover:text-red-800"
+                  >
+                      <X size={12} />
+                  </button>
+              </div>
+          );
+      });
+  };
+
   return (
     <div>
-      <h4 className="font-bold mb-2 text-sm text-archival-ink">Connections</h4>
+      <h4 className="font-bold mb-2 text-sm text-archival-ink">Outgoing Connections ({graph.outDegree(nodeId)})</h4>
       
-      {/* Existing Edges */}
+      {/* Existing Outgoing Edges */}
       <div className="space-y-1 mb-4 max-h-32 overflow-y-auto">
-        {graph.outEdges(nodeId).map(edgeId => {
-          const target = graph.target(edgeId);
-          const targetLabel = graph.getNodeAttribute(target, 'label');
-          const rel = graph.getEdgeAttribute(edgeId, 'type');
-          return (
-            <div key={edgeId} className="flex justify-between items-center text-xs bg-white p-1.5 rounded border border-archival-sepia/10">
-              <span><span className="text-archival-sepia">{rel}</span> → {targetLabel}</span>
-              <button 
-                onClick={() => handleDropEdge(edgeId)}
-                className="text-red-600 hover:text-red-800"
-              >
-                <X size={12} />
-              </button>
-            </div>
-          );
-        })}
+        {renderEdges(graph.outEdges(nodeId), 'out')}
         {graph.outDegree(nodeId) === 0 && <span className="text-xs text-gray-400 italic">No outgoing connections.</span>}
+      </div>
+
+      <h4 className="font-bold mb-2 text-sm text-archival-ink">Incoming Connections ({graph.inDegree(nodeId)})</h4>
+      
+      {/* Existing Incoming Edges */}
+      <div className="space-y-1 mb-4 max-h-32 overflow-y-auto">
+        {renderEdges(graph.inEdges(nodeId), 'in')}
+        {graph.inDegree(nodeId) === 0 && <span className="text-xs text-gray-400 italic">No incoming connections.</span>}
       </div>
 
       {/* Add New Edge */}
@@ -363,14 +380,14 @@ const EdgeManager: React.FC<{nodeId: string}> = ({ nodeId }) => {
         <input 
           type="text"
           placeholder="Relation (e.g., 'founded')"
-          value={relationship}
-          onChange={e => setRelationship(e.target.value)}
+          value={relationshipType} // Use new state variable
+          onChange={e => setRelationshipType(e.target.value)} // Update new state variable
           className="w-full p-1.5 border border-archival-sepia/30 rounded text-xs"
         />
 
         <button 
           onClick={handleAddEdge}
-          disabled={!targetId || !relationship}
+          disabled={!targetId || !relationshipType} // Use new state variable
           className="w-full bg-archival-ink text-white p-1.5 rounded text-xs disabled:opacity-50 hover:bg-black transition-colors"
         >
           + Connect

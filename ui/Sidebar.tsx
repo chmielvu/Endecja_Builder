@@ -144,7 +144,7 @@ export const Sidebar: React.FC = () => {
       const edges = graph.edges().map(e => ({
         source: graph.getNodeAttribute(graph.source(e), 'label'),
         target: graph.getNodeAttribute(graph.target(e), 'label'),
-        type: graph.getEdgeAttribute(e, 'type')
+        type: graph.getEdgeAttribute(e, 'relationshipType') // Use relationshipType
       }));
 
       const text = await summarizeGraphContent(nodes, edges);

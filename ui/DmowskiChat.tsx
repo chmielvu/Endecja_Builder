@@ -33,10 +33,10 @@ export const DmowskiChat: React.FC = () => {
         edges: graph.edges().map(e => {
             const source = graph.source(e);
             const target = graph.target(e);
-            const type = graph.getEdgeAttribute(e, 'type');
+            const relationshipType = graph.getEdgeAttribute(e, 'relationshipType'); // Use relationshipType
             const sLabel = graph.getNodeAttribute(source, 'label');
             const tLabel = graph.getNodeAttribute(target, 'label');
-            return `${sLabel} --[${type}]--> ${tLabel}`;
+            return `${sLabel} --[${relationshipType}]--> ${tLabel}`;
         })
       };
 

@@ -23,7 +23,7 @@ export function exportGraphToJSON(graph: MultiDirectedGraph<NodeAttributes, Edge
     edges: graph.mapEdges((edge, attrs, source, target) => ({
       source,
       target,
-      relationship: attrs.type,
+      relationship: attrs.relationshipType, // Use new name 'relationshipType'
       dates: `${attrs.valid_time.start}-${attrs.valid_time.end}`,
       sign: attrs.sign
     }))

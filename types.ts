@@ -53,7 +53,7 @@ export interface NodeAttributes {
 }
 
 export interface EdgeAttributes {
-  type: string;
+  relationshipType: string; // Renamed from 'type' to avoid conflict with Sigma.js 'type' attribute
   weight: number;
   sign: 1 | -1 | 0; // +1 Alliance, -1 Hostility, 0 Ambivalent
   valid_time: DateRange;

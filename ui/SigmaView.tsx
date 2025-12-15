@@ -38,6 +38,8 @@ export const SigmaView: React.FC = () => {
         // This forces it to fall back to 'defaultNodeType' ("circle") instead of reading
         // our semantic "type" attribute (which contains "person", "organization", etc.)
         nodeTypeAttribute: 'sigmaVisualType', 
+        // CRITICAL FIX: Add edgeTypeAttribute to prevent crash from semantic 'type' edge attribute
+        edgeTypeAttribute: 'sigmaVisualEdgeType',
         zIndex: true,
         labelFont: '"IBM Plex Sans", sans-serif',
         labelRenderedSizeThreshold: 6,
@@ -77,6 +79,9 @@ export const SigmaView: React.FC = () => {
 
         // Force visual rendering to 'arrow'
         res.type = 'arrow';
+        
+        // Map the semantic 'relationshipType' attribute to the label for display
+        res.label = data.relationshipType;
 
         if (data.is_hypothetical) {
             res.color = 'rgba(100, 100, 100, 0.3)';

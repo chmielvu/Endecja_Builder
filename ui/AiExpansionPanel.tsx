@@ -85,7 +85,7 @@ export const AiExpansionPanel: React.FC = () => {
         const edgeKey = `edge_${Date.now()}_${Math.random()}`;
         if (!graph.hasEdge(edgeKey)) {
             graph.addEdgeWithKey(edgeKey, edge.source, edge.target, {
-            type: edge.relationship,
+            relationshipType: edge.relationship, // Use new name 'relationshipType'
             weight: 1,
             sign: 1,
             valid_time: { start: startYear, end: endYear },
