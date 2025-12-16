@@ -11,7 +11,7 @@ function renderMarkdownToHtml(markdown: string): string {
   // Italic: *text*
   html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
   // Links: [link text](url)
-  html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="text-archival-navy hover:underline">$1</a>');
+  html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="text-endecja-ink hover:underline">$1</a>');
   // Newlines to <br/>
   html = html.replace(/\n/g, '<br/>');
   return html;
@@ -25,13 +25,13 @@ export const DetailsPanel: React.FC = () => {
   const attrs = graph.getNodeAttributes(selectedNode);
 
   return (
-    <div className="absolute right-4 top-4 w-80 bg-archival-paper border-2 border-archival-sepia shadow-xl rounded-sm font-serif max-h-[90vh] overflow-y-auto z-20">
-      <div className="p-4 border-b border-archival-sepia/20 flex justify-between items-start bg-archival-ink/5">
+    <div className="absolute right-4 top-4 w-80 bg-endecja-paper border-2 border-endecja-gold shadow-xl rounded-sm font-serif max-h-[90vh] overflow-y-auto z-20">
+      <div className="p-4 border-b border-endecja-gold/20 flex justify-between items-start bg-endecja-ink/5">
         <div>
-          <h2 className="text-xl font-bold text-archival-ink leading-tight">{attrs.label}</h2>
-          <span className="text-sm italic text-archival-sepia">{attrs.category} | {attrs.jurisdiction}</span>
+          <h2 className="text-xl font-bold text-endecja-ink leading-tight">{attrs.label}</h2>
+          <span className="text-sm italic text-endecja-gold">{attrs.category} | {attrs.jurisdiction}</span>
         </div>
-        <button onClick={() => selectNode(null)} className="text-archival-sepia hover:text-archival-accent">
+        <button onClick={() => selectNode(null)} className="text-endecja-gold hover:text-endecja-gold">
           <X size={20} />
         </button>
       </div>
@@ -40,7 +40,7 @@ export const DetailsPanel: React.FC = () => {
         {/* Description with Markdown support */}
         {attrs.description && (
           <div 
-            className="text-sm italic text-archival-ink/80 border-l-2 border-archival-accent pl-2"
+            className="text-sm italic text-endecja-ink/80 border-l-2 border-endecja-gold pl-2"
             dangerouslySetInnerHTML={{ __html: renderMarkdownToHtml(attrs.description) }}
           />
         )}
@@ -53,11 +53,11 @@ export const DetailsPanel: React.FC = () => {
 
         {/* Metrics */}
         <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="p-2 bg-white/50 border border-archival-sepia/10 rounded">
+          <div className="p-2 bg-white/50 border border-endecja-gold/10 rounded">
             <div className="text-xs text-gray-500 uppercase">Degree</div>
             <div className="font-bold text-lg">{graph.degree(selectedNode)}</div>
           </div>
-          <div className="p-2 bg-white/50 border border-archival-sepia/10 rounded">
+          <div className="p-2 bg-white/50 border border-endecja-gold/10 rounded">
             <div className="text-xs text-gray-500 uppercase">Secrecy</div>
             <div className="font-bold text-lg">Lvl {attrs.secrecy_level}</div>
           </div>
@@ -65,8 +65,12 @@ export const DetailsPanel: React.FC = () => {
 
         {/* Provenance */}
         <div className="space-y-1">
-          <h3 className="text-xs font-bold uppercase text-archival-sepia">Provenance</h3>
-          <ProvenanceBadge provenance={attrs.provenance} />
+          <h3 className="text-xs font-bold uppercase text-endecja-gold">Provenance</h3>
+          {attrs.provenance && attrs.provenance.length > 0 ? (
+            attrs.provenance.map((p, i) => <ProvenanceBadge key={i} provenance={p} />)
+          ) : (
+            <div className="text-xs italic text-gray-500">No provenance information available.</div>
+          )}
         </div>
 
         {/* Embeddings / Vector Info */}

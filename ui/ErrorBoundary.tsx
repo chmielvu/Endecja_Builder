@@ -22,7 +22,8 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error, errorInfo: null };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  // Converted to an arrow function property to ensure `this` context is correctly bound.
+  public componentDidCatch = (error: Error, errorInfo: ErrorInfo) => {
     console.error("Uncaught error:", error, errorInfo);
     this.setState({
       error: error,
@@ -30,7 +31,8 @@ export class ErrorBoundary extends Component<Props, State> {
     });
   }
 
-  public render() {
+  // Converted to an arrow function property to ensure `this` context is correctly bound.
+  public render = () => {
     if (this.state.hasError) {
       // You can render any custom fallback UI
       return (

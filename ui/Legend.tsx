@@ -22,16 +22,16 @@ const PROVENANCE_CLASSIFICATIONS = [
 
 export const Legend: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   return (
-    <div className="fixed right-4 bottom-24 w-64 bg-archival-paper border-2 border-archival-sepia p-4 rounded-lg shadow-xl font-serif z-50 text-sm">
-      <div className="flex justify-between items-center mb-3 border-b border-archival-sepia/20 pb-2">
-         <h3 className="font-bold text-archival-ink flex items-center gap-2">
+    <div className="fixed right-4 bottom-24 w-64 bg-endecja-paper border-2 border-endecja-gold p-4 rounded-lg shadow-xl font-serif z-50 text-sm">
+      <div className="flex justify-between items-center mb-3 border-b border-endecja-gold/20 pb-2">
+         <h3 className="font-bold text-endecja-ink flex items-center gap-2">
             <HelpCircle size={16} /> Graph Legend
          </h3>
-         <button onClick={onClose} className="hover:text-archival-accent"><X size={16} /></button>
+         <button onClick={onClose} className="hover:text-endecja-gold"><X size={16} /></button>
       </div>
       <div className="space-y-3">
         <div>
-            <h4 className="font-bold text-xs mb-2 text-archival-sepia uppercase">Node Types & Glyphs</h4>
+            <h4 className="font-bold text-xs mb-2 text-endecja-gold uppercase">Node Types & Glyphs</h4>
             <div className="grid grid-cols-2 gap-y-2">
                 {Object.entries(NODE_GLYPH_STYLES).map(([type, style]) => (
                     <div key={type} className="flex items-center gap-2">
@@ -42,13 +42,13 @@ export const Legend: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 border: `${style.borderStyle || 'solid'} 1px ${style.border}` 
                             }}
                         ></span>
-                        <span className="capitalize text-xs text-archival-ink">{style.label}</span>
+                        <span className="capitalize text-xs text-endecja-ink">{style.label}</span>
                     </div>
                 ))}
             </div>
         </div>
-        <div className="pt-2 border-t border-archival-sepia/20">
-            <h4 className="font-bold text-xs mb-2 text-archival-sepia uppercase">Provenance Classification</h4>
+        <div className="pt-2 border-t border-endecja-gold/20">
+            <h4 className="font-bold text-xs mb-2 text-endecja-gold uppercase">Provenance Classification</h4>
             <div className="space-y-1">
                 {PROVENANCE_CLASSIFICATIONS.map((classification) => (
                     <div key={classification.type} className={`flex items-center gap-2 px-1 py-0.5 rounded-md text-[0.6rem] ${classification.color}`}>
@@ -57,8 +57,8 @@ export const Legend: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 ))}
             </div>
         </div>
-         <div className="pt-2 border-t border-archival-sepia/20">
-            <h4 className="font-bold text-xs mb-2 text-archival-sepia uppercase">Relations</h4>
+         <div className="pt-2 border-t border-endecja-gold/20">
+            <h4 className="font-bold text-xs mb-2 text-endecja-gold uppercase">Relations</h4>
              <div className="space-y-2">
                 <div className="flex items-center gap-2">
                     <span className="w-8 h-0.5 bg-[#2c241b]"></span>

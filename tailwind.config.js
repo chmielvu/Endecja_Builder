@@ -7,19 +7,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        archival: {
-          paper: '#f5f5dc',      // Beige paper
-          ink: '#2c241b',        // Dark brown ink
-          sepia: '#704214',      // Sepia brown
-          accent: '#dc143c',     // Polish flag red
-          navy: '#1e3a5f',       // Endecja blue
-          gold: '#d4af37',       // Catholic gold
-          faint: 'rgba(112, 66, 20, 0.1)'
+        endecja: {
+          base: '#1b2d21',   // Deep Forest Green (Backgrounds)
+          light: '#3d5c45',  // Lighter Green (Hover states)
+          gold: '#d4af37',   // Metallic Gold (Accents/Borders)
+          paper: '#f0fdf4',  // Very pale green/patina (Canvas Background)
+          ink: '#0f172a',    // Dark Slate (Text)
+          alert: '#991b1b',  // Blood Red (Errors/Myths)
         }
       },
       fontFamily: {
-        serif: ['"Playfair Display"', 'serif'],
-        sans: ['"IBM Plex Sans"', 'sans-serif'],
+        serif: ['"Crimson Text"', 'serif'],
+        sans: ['"Inter"', 'sans-serif'],
         mono: ['"Courier Prime"', 'monospace']
       }
     },

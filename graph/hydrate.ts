@@ -112,16 +112,18 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
   const edges = data.edges || seedData.edges;
 
   // 1. Bulk Import Nodes
-  nodes.forEach((n: any) => {
+  nodes.forEach((n: any, i: number) => {
     if (!validateNodeSchema(n)) return;
 
     // Support both 'id' (seed) and 'key' (graphology)
     const id = n.id || n.key;
 
-    // Generate deterministic visuals based on ID (simple hash)
-    const idHash = id.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
-    const x = (idHash % 100) + rng.range(-20, 20);
-    const y = ((idHash * 31) % 100) + rng.range(-20, 20);
+    // STRUCTURED INITIAL LAYOUT
+    // Arrange nodes in a circle by default to ensure visibility and prevent overlap
+    const angle = (i / nodes.length) * 2 * Math.PI;
+    const radius = 30 + (i % 3) * 5; // Slight variation in radius for organic look
+    const x = radius * Math.cos(angle);
+    const y = radius * Math.sin(angle);
 
     const valid_time = parseDateRange(n.dates);
     const jurisdiction = determineJurisdiction(id, n.label || id);
@@ -139,13 +141,13 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
       color: getNodeColor(nodeType),
       financial_weight: rng.range(0.1, 1.0),
       secrecy_level: n.type === 'organization' && (n.label?.includes('Liga') || n.label?.includes('Zet')) ? 5 : 1,
-      provenance: {
+      provenance: [{
         source: 'Endecja Database v1.0',
         confidence: 1.0,
         method: 'archival',
         sourceClassification: n.myth_related ? 'myth' : 'primary', // Dynamically set source classification
         timestamp: Date.now()
-      }
+      }]
     };
 
     if (!graph.hasNode(id)) {
@@ -167,13 +169,13 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
         sign: sign,
         valid_time: valid_time,
         is_hypothetical: false,
-        provenance: {
+        provenance: [{
           source: 'Endecja Database v1.0',
           confidence: 1.0,
           method: 'archival',
           sourceClassification: 'primary', // Default for edges
           timestamp: Date.now()
-        }
+        }]
       };
 
       const key = e.key || `e_${idx}`;
@@ -185,29 +187,33 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
 
   // 3. Process Myths as Nodes and Connect to Related Nodes
   if (data.myths && Array.isArray(data.myths)) {
-    data.myths.forEach((myth: any) => {
+    data.myths.forEach((myth: any, i: number) => {
       // Create Myth Node
       const mythId = myth.id;
       if (!graph.hasNode(mythId)) {
+        // Position myths in a separate cluster or outer ring
+        const angle = (i / data.myths.length) * 2 * Math.PI;
+        const radius = 45; 
+        
         const attributes: NodeAttributes = {
           label: myth.title,
           category: NodeType.MYTH, // Renamed
           description: `MIT: ${myth.claim}\n\nPRAWDA: ${myth.truth}`,
           jurisdiction: Jurisdiction.OTHER,
           valid_time: { start: 1890, end: 1945 },
-          x: rng.range(-30, 30),
-          y: rng.range(-30, 30),
+          x: radius * Math.cos(angle),
+          y: radius * Math.sin(angle),
           size: 25, // Myths are prominent
           color: getNodeColor(NodeType.MYTH),
           financial_weight: 0,
           secrecy_level: 1,
-          provenance: {
+          provenance: [{
             source: 'Historical Analysis (Myths)',
             confidence: 1.0,
             method: 'inference',
             sourceClassification: 'myth', // Explicitly 'myth' for myths
             timestamp: Date.now()
-          }
+          }]
         };
         graph.addNode(mythId, attributes);
       }
@@ -225,13 +231,13 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
                 valid_time: { start: 1890, end: 1945 },
                 is_hypothetical: false,
                 color: '#7b2cbf', // Match myth node color
-                provenance: {
+                provenance: [{
                   source: 'Myth Analysis',
                   confidence: 1.0,
                   method: 'inference',
                   sourceClassification: 'myth', // Edges related to myths are also 'myth'
                   timestamp: Date.now()
-                }
+                }]
               });
             }
           }

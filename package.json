@@ -17,6 +17,7 @@
     "graphology-communities-louvain": "^2.0.1",
     "graphology-metrics": "^2.3.0",
     "graphology-types": "^0.24.0",
+    "graphology-components": "^1.2.1",
     "@xenova/transformers": "^2.14.0",
     "@tensorflow/tfjs": "^4.16.0",
     "@google/genai": "^0.1.0",

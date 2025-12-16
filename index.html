@@ -35,18 +35,17 @@
         theme: {
           extend: {
             colors: {
-              archival: {
-                paper: '#f5f5dc',
-                ink: '#2c241b',
-                sepia: '#704214',
-                accent: '#dc143c',
-                navy: '#1e3a5f',
-                gold: '#d4af37',
-                faint: 'rgba(112, 66, 20, 0.1)'
+              endecja: {
+                base: '#1b2d21',   // Deep Forest Green (Backgrounds)
+                light: '#3d5c45',  // Lighter Green (Hover states)
+                gold: '#d4af37',   // Metallic Gold (Accents/Borders)
+                paper: '#f0fdf4',  // Very pale green/patina (Canvas Background)
+                ink: '#0f172a',    // Dark Slate (Text)
+                alert: '#991b1b',  // Blood Red (Errors/Myths)
               }
             },
             fontFamily: {
-              serif: ['"Playfair Display"', 'serif'],
+              serif: ['"Crimson Text"', 'serif'],
               sans: ['"IBM Plex Sans"', 'sans-serif'],
               mono: ['"Courier Prime"', 'monospace']
             }
@@ -56,29 +55,49 @@
     </script>
     <style>
       body {
-        background-color: #f5f5dc;
-        color: #2c241b;
+        background-color: #1b2d21; /* Deep Forest Green (Verdigris Base) */
+        color: #d4af37; /* Gold Text */
+        overflow: hidden; /* App handles scrolling */
       }
-      /* Custom scrollbar for archival feel */
+      
+      /* Art Deco Border Effect on the main container */
+      #root {
+        height: 100vh;
+        width: 100vw;
+        border: 6px solid #1b2d21;
+        outline: 2px solid #d4af37; /* Gold outline */
+        box-sizing: border-box;
+      }
+
+      /* Custom scrollbar for Verdigris feel */
       ::-webkit-scrollbar {
         width: 8px;
+        height: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #e6d2a0;
+        background: #1b2d21;
+        border-left: 1px solid #3d5c45;
       }
       ::-webkit-scrollbar-thumb {
-        background: #704214;
-        border-radius: 4px;
+        background: #d4af37;
+        border-radius: 0;
+        border: 1px solid #1b2d21;
       }
-      /* Sigma.js canvas aesthetic */
+      ::-webkit-scrollbar-thumb:hover {
+        background: #b59230;
+      }
+
+      /* Sigma.js canvas aesthetic - blending graph into the patina paper */
       .sigma-graph {
-        mix-blend-mode: multiply; /* Fuses the graph ink with the background texture */
+        mix-blend-mode: multiply; 
         opacity: 0.9;
       }
+      
       /* Custom font and shadow for labels */
       .sigma-node-label, .sigma-edge-label {
-        font-family: 'Crimson Text', serif !important; /* Enforce 1930s typography */
-        text-shadow: 0px 0px 2px #f4e4bc; /* Halo to read text over edges */
+        font-family: 'Crimson Text', serif !important;
+        text-shadow: 0px 0px 3px #f0fdf4; /* Halo to read text over edges */
+        font-weight: 700;
       }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=IBM+Plex+Sans:wght@400;600&family=Courier+Prime&family=Crimson+Text:wght@400;700&display=swap" rel="stylesheet">
@@ -101,8 +120,7 @@
     "sigma": "https://esm.sh/sigma@^3.0.2",
     "sigma/": "https://esm.sh/sigma@^3.0.2/",
     "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
-    "buffer": "https://esm.sh/buffer@6.0.3",
-    "long": "https://esm.sh/long@5.2.3"
+    "buffer": "https://esm.sh/buffer@^6.0.3"
   }
 }
 </script>

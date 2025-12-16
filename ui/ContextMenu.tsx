@@ -27,14 +27,14 @@ export const ContextMenu: React.FC<Props> = ({ x, y, onClose, onCreateNode }) =>
   return (
     <div
       ref={menuRef}
-      className="absolute bg-archival-paper border-2 border-archival-sepia shadow-xl rounded-sm p-2 flex flex-col gap-1 z-50 font-serif text-sm"
+      className="absolute bg-endecja-paper border-2 border-endecja-gold shadow-xl rounded-sm p-2 flex flex-col gap-1 z-50 font-serif text-sm"
       style={{ left: x, top: y }}
       role="menu"
       aria-orientation="vertical"
     >
-      <div className="flex justify-between items-center pb-1 border-b border-archival-sepia/20 mb-1">
-        <span className="font-bold text-archival-ink">Add Node</span>
-        <button onClick={onClose} className="text-archival-sepia hover:text-archival-accent" aria-label="Close menu">
+      <div className="flex justify-between items-center pb-1 border-b border-endecja-gold/20 mb-1">
+        <span className="font-bold text-endecja-ink">Add Node</span>
+        <button onClick={onClose} className="text-endecja-gold hover:text-endecja-gold" aria-label="Close menu">
           <X size={16} />
         </button>
       </div>
@@ -42,7 +42,7 @@ export const ContextMenu: React.FC<Props> = ({ x, y, onClose, onCreateNode }) =>
         <button
           key={type}
           onClick={() => onCreateNode(type)}
-          className="px-3 py-1 text-left hover:bg-archival-faint rounded text-archival-ink capitalize"
+          className="px-3 py-1 text-left hover:bg-endecja-gold/10 rounded text-endecja-ink capitalize"
           role="menuitem"
         >
           {type}

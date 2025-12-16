@@ -16,9 +16,21 @@ export enum Jurisdiction {
   OTHER = 'Other'
 }
 
+export enum Stance {
+  ALLIANCE = 'alliance',
+  HOSTILITY = 'hostility',
+  AMBIVALENCE = 'ambivalence',
+  MENTORSHIP = 'mentorship',
+  RIVALRY = 'rivalry',
+  DEPENDENCY = 'dependency',
+  INFLUENCE = 'influence'
+}
+
 export interface DateRange {
   start: number;
   end: number;
+  granularity?: 'day' | 'month' | 'year' | 'decade';
+  circa?: boolean;
 }
 
 export interface Provenance {
@@ -28,6 +40,7 @@ export interface Provenance {
   sourceClassification: 'primary' | 'secondary' | 'hostile' | 'myth' | 'ai_inference'; // Nature of the source itself
   model_tag?: string;
   timestamp: number;
+  notes?: string;
 }
 
 export interface NodeAttributes {
@@ -50,13 +63,14 @@ export interface NodeAttributes {
   community?: number;
   betweenness?: number;
   
-  provenance: Provenance;
+  provenance: Provenance[];
 }
 
 export interface EdgeAttributes {
   relationshipType: string; // Renamed from 'type' to avoid conflict with Sigma.js 'type' attribute
   weight: number;
   sign: 1 | -1 | 0; // +1 Alliance, -1 Hostility, 0 Ambivalent
+  stance?: Stance;
   valid_time: DateRange;
   
   // Sigma.js rendering properties, often modified by reducers
@@ -66,7 +80,7 @@ export interface EdgeAttributes {
   // Logic
   is_hypothetical: boolean;
   
-  provenance: Provenance;
+  provenance: Provenance[];
 }
 
 export interface TimelineEvent {
