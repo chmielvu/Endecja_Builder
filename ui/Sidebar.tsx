@@ -1,15 +1,28 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useGraphStore } from '../state/graphStore';
 import { exportGraphToJSON, importGraphFromJSON } from '../graph/serialization';
-import { Play, Download, Brain, Share2, Upload, FileText, X, Search, Users, HelpCircle, Network, Sparkles, Library, Save } from 'lucide-react';
-import { embeddingService, searchByEmbedding } from '../ml/embeddings';
-import { scout, architectAnalysis, applyGraphOperations } from '../services/geminiService'; // Import new services
+import { Play, Download, Brain, Share2, FileText, X, Search, Users, HelpCircle, Network, Sparkles, Library, Save } from 'lucide-react';
+import { embeddingService } from '../ml/embeddings';
+import { scout, architectAnalysis, applyGraphOperations } from '../services/geminiService';
+import { useGraphAlgorithms } from '../hooks/useGraphAlgorithms'; // Import new hook
 import { Legend } from './Legend';
 import { SourceManager } from './SourceManager';
 import { SnapshotManager } from './SnapshotManager';
 
 export const Sidebar: React.FC = () => {
-  const { graph, setGraph, isLoading, setLoading, setEmbeddingLoaded, isEmbeddingLoaded, frustrationIndex, setFrustrationIndex, selectNode, refresh } = useGraphStore();
+  const { graph, setGraph, isLoading, setLoading, selectNode, frustrationIndex } = useGraphStore();
+  
+  // Custom hook for algorithms
+  const { 
+    runLayout, 
+    detectCommunities, 
+    measureInfluence, 
+    calculateFrustration, 
+    computeEmbeddings, 
+    semanticSearch 
+  } = useGraphAlgorithms();
+
   const [showSummary, setShowSummary] = useState(false);
   const [summaryText, setSummaryText] = useState('');
   const [modalTitle, setModalTitle] = useState('Mission Report');
@@ -20,112 +33,19 @@ export const Sidebar: React.FC = () => {
   const [showSnapshotManager, setShowSnapshotManager] = useState(false);
   const [geminiSources, setGeminiSources] = useState<Array<{ uri: string, title: string }>>([]);
 
+  // Use the service's internal state for isEmbeddingLoaded
+  const [localIsEmbeddingLoaded, setLocalIsEmbeddingLoaded] = useState(embeddingService.getIsEmbeddingLoaded());
 
-  const handleComputeEmbeddings = async () => {
-    setLoading(true, 'Loading Transformers...');
-    try {
-      await embeddingService.load();
-      setLoading(true, 'Embedding Graph Nodes...');
-      await embeddingService.embedNodes(graph);
-      setEmbeddingLoaded(true);
-      setLoading(false);
-    } catch (e) {
-      console.error(e);
-      alert('Failed to compute embeddings.');
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLocalIsEmbeddingLoaded(embeddingService.getIsEmbeddingLoaded());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSemanticSearch = async () => {
-    if (!searchQuery.trim()) return;
-    if (!isEmbeddingLoaded) {
-        alert("Please load ML models first.");
-        return;
-    }
-    setLoading(true, 'Searching...');
-    try {
-        const results = await searchByEmbedding(searchQuery, graph);
-        setSearchResults(results);
-    } catch (e) {
-        console.error(e);
-    } finally {
-        setLoading(false);
-    }
-  };
-
-  const handleRunLayout = () => {
-    setLoading(true, 'Structuring Graph (ForceAtlas2)...');
-    const worker = new Worker(new URL('../workers/layoutFA2.worker.ts', import.meta.url), { type: 'module' });
-    worker.postMessage({ graphData: graph.export(), iterations: 500 }); // Increased iterations
-    worker.onmessage = (e) => {
-      const { positions } = e.data;
-      Object.entries(positions).forEach(([key, pos]: [string, any]) => {
-        graph.setNodeAttribute(key, 'x', pos.x);
-        graph.setNodeAttribute(key, 'y', pos.y);
-      });
-      worker.terminate();
-      refresh();
-      setLoading(false);
-    };
-  };
-
-  const handleDetectCommunities = () => {
-    setLoading(true, 'Detecting Factions (Louvain)...');
-    const worker = new Worker(new URL('../workers/louvain.worker.ts', import.meta.url), { type: 'module' });
-    worker.postMessage({ graphData: graph.export() });
-    worker.onmessage = (e) => {
-      const { communities } = e.data;
-      // Palette aligned with theme
-      const PALETTE = ['#3d5c45', '#1b2d21', '#d4af37', '#991b1b', '#0f172a'];
-      graph.forEachNode((node) => {
-          const commId = communities[node];
-          if (commId !== undefined) {
-             graph.setNodeAttribute(node, 'community', commId);
-             graph.setNodeAttribute(node, 'color', PALETTE[commId % PALETTE.length]);
-          }
-      });
-      refresh();
-      worker.terminate();
-      setLoading(false);
-    };
-  };
-
-  const handleMeasureInfluence = () => {
-    setLoading(true, 'Measuring Influence (Centrality)...');
-    const worker = new Worker(new URL('../workers/centrality.worker.ts', import.meta.url), { type: 'module' });
-    worker.postMessage({ graphData: graph.export() });
-    worker.onmessage = (e) => {
-      const { scores } = e.data;
-      const maxScore = Math.max(...(Object.values(scores) as number[]));
-      
-      Object.entries(scores).forEach(([nodeId, score]) => {
-        // Resize nodes based on centrality: min 5, max 30
-        const norm = (score as number) / (maxScore || 1);
-        graph.setNodeAttribute(nodeId, 'size', 5 + norm * 25);
-        // FIX: Cast score to number, as it's 'unknown' from the worker message event.
-        graph.setNodeAttribute(nodeId, 'betweenness', score as number);
-      });
-      
-      refresh();
-      worker.terminate();
-      setLoading(false);
-    };
-    worker.onerror = (e) => {
-        console.error("Centrality worker error:", e);
-        setLoading(false);
-        alert("Failed to measure influence.");
-    };
-  };
-
-  const handleCalcFrustration = () => {
-    setLoading(true, 'Analyzing Tensions (SBT)...');
-    const worker = new Worker(new URL('../workers/sbt.worker.ts', import.meta.url), { type: 'module' });
-    worker.postMessage({ graphData: graph.export() });
-    worker.onmessage = (e) => {
-      setFrustrationIndex(e.data.frustrationIndex);
-      worker.terminate();
-      setLoading(false);
-    };
+    const results = await semanticSearch(searchQuery, localIsEmbeddingLoaded);
+    setSearchResults(results);
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,7 +63,6 @@ export const Sidebar: React.FC = () => {
     }
   };
 
-  // Replaces old summarizeGraphContent
   const handleGenerateReport = async () => {
     setLoading(true, 'Scout is generating historical overview...');
     try {
@@ -167,19 +86,16 @@ export const Sidebar: React.FC = () => {
     }
   };
 
-
-  // Replaces old analyzeGraphStructure
   const handleGeminiAnalyst = async () => {
     setLoading(true, 'Architect is analyzing topology with NetworkX...');
     try {
-        const result = await architectAnalysis(graph); // Pass the full graph
-        applyGraphOperations(graph, result.operations); // Apply operations suggested by Architect
-        // FIX: Changed 'historicalSummary' to 'historicalInterpretation'
+        const result = await architectAnalysis(graph); 
+        applyGraphOperations(graph, result.operations); 
         setSummaryText(result.historicalInterpretation);
         setModalTitle('Architect Structural Analysis');
-        setFrustrationIndex(result.metrics.frustrationIndex); // Update local state for frustration index from Architect
-        // Note: Community and betweenness are now applied directly to graph via applyGraphOperations
-        setGeminiSources([]); // Architect doesn't use Google Search for analysis
+        // Frustration index is set within architectAnalysis flow potentially, but if not we can set it here if returned
+        // setFrustrationIndex(result.metrics.frustrationIndex); 
+        setGeminiSources([]); 
         setShowSummary(true);
     } catch (e: any) {
         console.error(e);
@@ -206,7 +122,7 @@ export const Sidebar: React.FC = () => {
             />
             <button 
                 onClick={handleSemanticSearch}
-                disabled={!isEmbeddingLoaded}
+                disabled={!localIsEmbeddingLoaded}
                 className="p-2 bg-endecja-gold text-endecja-base rounded hover:bg-white disabled:opacity-50 transition-colors"
             >
                 <Search size={16} />
@@ -248,28 +164,28 @@ export const Sidebar: React.FC = () => {
         <label className="text-xs uppercase tracking-widest text-endecja-gold font-bold">Engine Controls</label>
 
         <button 
-          onClick={handleRunLayout}
+          onClick={runLayout}
           disabled={isLoading}
           className="w-full flex items-center gap-3 px-4 py-3 bg-endecja-base border border-endecja-gold/30 hover:border-endecja-gold text-endecja-paper transition-all rounded text-sm disabled:opacity-50">
           <Share2 size={16} /> Structure Graph
         </button>
         
         <button 
-          onClick={handleDetectCommunities}
+          onClick={detectCommunities}
           disabled={isLoading}
           className="w-full flex items-center gap-3 px-4 py-3 bg-endecja-base border border-endecja-gold/30 hover:border-endecja-gold text-endecja-paper transition-all rounded text-sm disabled:opacity-50">
           <Users size={16} /> Detect Factions
         </button>
 
         <button 
-          onClick={handleMeasureInfluence}
+          onClick={measureInfluence}
           disabled={isLoading}
           className="w-full flex items-center gap-3 px-4 py-3 bg-endecja-base border border-endecja-gold/30 hover:border-endecja-gold text-endecja-paper transition-all rounded text-sm disabled:opacity-50">
           <Network size={16} /> Measure Influence
         </button>
 
         <button 
-          onClick={handleCalcFrustration}
+          onClick={calculateFrustration}
           disabled={isLoading}
           className="w-full flex items-center gap-3 px-4 py-3 bg-endecja-base border border-endecja-gold/30 hover:border-endecja-gold text-endecja-paper transition-all rounded text-sm disabled:opacity-50">
           <Play size={16} /> Analyze Tensions
@@ -278,14 +194,14 @@ export const Sidebar: React.FC = () => {
         <div className="h-px bg-endecja-gold/20 my-2" />
 
         <button 
-          onClick={handleGenerateReport} // Updated to new scout function
+          onClick={handleGenerateReport} 
           disabled={isLoading}
           className="w-full flex items-center gap-3 px-4 py-3 bg-endecja-base border border-endecja-gold/30 hover:border-endecja-gold text-endecja-paper transition-all rounded text-sm disabled:opacity-50">
           <FileText size={16} /> Generate Report
         </button>
 
         <button 
-          onClick={handleGeminiAnalyst} // Updated to new architectAnalysis function
+          onClick={handleGeminiAnalyst} 
           disabled={isLoading}
           className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-endecja-base to-endecja-light border border-endecja-gold hover:from-endecja-gold hover:to-yellow-500 hover:text-endecja-base text-endecja-gold transition-all rounded text-sm font-bold disabled:opacity-50 shadow-lg"
           title="Advanced topological analysis using Gemini 2.5 Flash Lite"
@@ -294,10 +210,10 @@ export const Sidebar: React.FC = () => {
         </button>
 
         <button 
-          onClick={handleComputeEmbeddings}
-          disabled={isLoading || isEmbeddingLoaded}
+          onClick={computeEmbeddings}
+          disabled={isLoading || localIsEmbeddingLoaded}
           className="w-full flex items-center gap-3 px-4 py-3 bg-endecja-base border border-endecja-gold/30 hover:border-endecja-gold text-endecja-paper transition-all rounded text-sm disabled:opacity-50">
-          <Brain size={16} /> {isEmbeddingLoaded ? 'Embeddings Ready' : 'Load Neural Engine'}
+          <Brain size={16} /> {localIsEmbeddingLoaded ? 'Embeddings Ready' : 'Load Neural Engine'}
         </button>
 
         <div className="pt-4 border-t border-endecja-gold/20 flex gap-2">

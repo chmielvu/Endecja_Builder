@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { SigmaView } from './ui/SigmaView';
 import { Sidebar } from './ui/Sidebar';
@@ -6,6 +5,8 @@ import { DocumentUploader } from './ui/DocumentUploader';
 import { BuilderToolbar } from './ui/BuilderToolbar';
 import { BuilderNodeEditor } from './ui/BuilderNodeEditor';
 import { BuilderEdgeEditor } from './ui/BuilderEdgeEditor';
+import { GraphControls } from './ui/GraphControls'; 
+import { DmowskiChat } from './ui/DmowskiChat'; // NEW
 import { Toaster } from "./components/ui/toaster";
 import { useGraphStore } from './state/graphStore';
 
@@ -28,6 +29,12 @@ function App() {
               <DocumentUploader />
             </div>
           )}
+
+          {/* Graph Controls - Visible in Analysis Mode */}
+          {mode === 'analysis' && <GraphControls />}
+          
+          {/* AI Voice Chat Widget - Always available */}
+          <DmowskiChat />
         </main>
 
         {/* Sidebar Controls */}

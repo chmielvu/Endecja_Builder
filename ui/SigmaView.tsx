@@ -1,11 +1,10 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Sigma from 'sigma';
-import { Coordinates } from 'sigma/types';
 import { useGraphStore } from '../state/graphStore';
 import { GeoOverlay } from './GeoOverlay';
 import { ContextMenu } from './ContextMenu';
-import { notify } from '../lib/utils';
+import { useGraphInteraction } from '../hooks/useGraphInteraction';
 import {
   Dialog,
   DialogContent,
@@ -17,33 +16,34 @@ import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
 
-export const SigmaView = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { graph, selectNode, selectEdge, timeFilter, version, refresh } = useGraphStore();
-
-  const sigmaRef = useRef<Sigma | null>(null);
+// Helper to calculate graph bounding box since graphology doesn't strictly provide getExtremities by default
+const getGraphExtremities = (graph: any) => {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let hasNodes = false;
   
-  // Context Menu State
-  const [contextMenu, setContextMenu] = useState<{
-    visible: boolean;
-    x: number;
-    y: number;
-    graphX: number;
-    graphY: number;
-    nodeId?: string;
-  }>({ visible: false, x: 0, y: 0, graphX: 0, graphY: 0 });
-
-  // Linking State
-  const [edgeMode, setEdgeMode] = useState<{ active: boolean; source?: string }>({ active: false });
-  const [edgeDialog, setEdgeDialog] = useState<{ open: boolean; target?: string; relationship: string }>({
-    open: false,
-    relationship: '',
+  graph.forEachNode((_: any, attrs: any) => {
+    hasNodes = true;
+    const x = attrs.x || 0;
+    const y = attrs.y || 0;
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
   });
 
-  useEffect(() => {
-    if (!containerRef.current) return;
+  if (!hasNodes) return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
+  return { minX, minY, maxX, maxY };
+};
 
-    // Initialize Sigma
+export const SigmaView = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { graph, timeFilter, version, cameraSignal } = useGraphStore();
+  const sigmaRef = useRef<Sigma | null>(null);
+
+  // Initialize Sigma
+  useEffect(() => {
+    if (!containerRef.current || sigmaRef.current) return;
+
     const sigma = new Sigma(graph, containerRef.current, {
       minCameraRatio: 0.1,
       maxCameraRatio: 10,
@@ -51,89 +51,63 @@ export const SigmaView = () => {
       defaultEdgeType: "arrow",
       labelFont: "Crimson Text",
       allowInvalidContainer: true,
-      renderEdgeLabels: true, // Enable edge labels for visibility
+      renderEdgeLabels: true,
+      zIndex: true,
     });
-
-    // --- Interaction Handlers ---
-
-    // 1. Node Click (Selection OR Linking)
-    sigma.on("clickNode", (e) => {
-      // If we are in "Edge Creation Mode" and clicked a different node
-      if (edgeMode.active && edgeMode.source && edgeMode.source !== e.node) {
-        setEdgeDialog({ open: true, target: e.node, relationship: '' });
-      } else {
-        // Standard Selection
-        selectNode(e.node);
-        // Start Linking Mode
-        setEdgeMode({ active: true, source: e.node });
-        notify.info("Link mode: Click another node to connect");
-      }
-    });
-
-    // 2. Edge Click (Selection)
-    sigma.on("clickEdge", (e) => {
-        selectEdge(e.edge);
-    });
-
-    // 3. Right Click (Context Menu)
-    sigma.on("rightClickNode", (e) => {
-      e.preventSigmaDefault();
-      setContextMenu({
-        visible: true,
-        // FIX: Access clientX and clientY from e.event
-        x: e.event.x,
-        y: e.event.y,
-        graphX: 0,
-        graphY: 0,
-        nodeId: e.node,
-      });
-    });
-
-    sigma.on("rightClickStage", (e) => {
-      e.preventSigmaDefault();
-      // Convert screen coords to graph coords
-      const pos = sigma.viewportToGraph({ x: e.event.x, y: e.event.y });
-      setContextMenu({
-        visible: true,
-        // FIX: Access clientX and clientY from e.event
-        x: e.event.x,
-        y: e.event.y,
-        graphX: pos.x,
-        graphY: pos.y,
-      });
-    });
-
-    // 4. Stage Click (Cancel Actions)
-    sigma.on("clickStage", () => {
-      if (edgeMode.active) {
-        setEdgeMode({ active: false });
-        notify.info("Link mode cancelled");
-      }
-      setContextMenu({ ...contextMenu, visible: false });
-      // Deselect if clicking on empty stage
-      selectNode(null);
-      selectEdge(null);
-    });
-
-    // 5. Keyboard (ESC to cancel)
-    const escHandler = (ev: KeyboardEvent) => {
-      if (ev.key === 'Escape') {
-        if (edgeMode.active) {
-          setEdgeMode({ active: false });
-          notify.info("Link mode cancelled");
-        }
-        setContextMenu({ ...contextMenu, visible: false });
-      }
-    };
-    window.addEventListener('keydown', escHandler);
 
     sigmaRef.current = sigma;
 
     return () => {
-      window.removeEventListener('keydown', escHandler);
       sigma.kill();
+      sigmaRef.current = null;
     };
-  }, [edgeMode.active, edgeMode.source]); // Re-bind listeners when mode changes
+  }, [graph]); // Dependency on graph ensuring initialization on first load
+
+  // Use Interaction Hook
+  const { 
+    contextMenu, 
+    setContextMenu, 
+    edgeMode, 
+    edgeDialog, 
+    setEdgeDialog, 
+    handleEdgeCreate 
+  } = useGraphInteraction(sigmaRef.current);
+
+  // Handle Camera Signals
+  useEffect(() => {
+    if (!sigmaRef.current || !cameraSignal) return;
+    const camera = sigmaRef.current.getCamera();
+    
+    switch (cameraSignal.type) {
+        case 'in':
+            camera.animatedZoom({ duration: 400 });
+            break;
+        case 'out':
+            camera.animatedUnzoom({ duration: 400 });
+            break;
+        case 'fit':
+            const bounds = getGraphExtremities(graph);
+            if (bounds.minX !== -Infinity && bounds.minX !== Infinity) {
+                const { width, height } = sigmaRef.current.getDimensions();
+                const dx = bounds.maxX - bounds.minX;
+                const dy = bounds.maxY - bounds.minY;
+                const ratio = Math.max(
+                    dx / (width * 0.9),
+                    dy / (height * 0.9)
+                ) || 1;
+
+                camera.animate(
+                    {
+                        x: (bounds.minX + bounds.maxX) / 2,
+                        y: (bounds.minY + bounds.maxY) / 2,
+                        ratio: ratio,
+                    }, 
+                    { duration: 600, easing: 'cubicInOut' }
+                );
+            }
+            break;
+    }
+  }, [cameraSignal, graph]);
 
   // Refresh renderer when graph/time changes
   useEffect(() => {
@@ -141,38 +115,6 @@ export const SigmaView = () => {
       sigmaRef.current.refresh();
     }
   }, [version, timeFilter]);
-
-  const handleEdgeCreate = () => {
-    if (!edgeMode.source || !edgeDialog.target) return;
-    
-    // Check duplication
-    if (graph.hasEdge(edgeMode.source, edgeDialog.target)) {
-       notify.error("Edge already exists");
-       setEdgeDialog({ open: false, relationship: '' });
-       setEdgeMode({ active: false });
-       return;
-    }
-
-    try {
-      graph.addEdge(edgeMode.source, edgeDialog.target, {
-        relationshipType: edgeDialog.relationship || 'RELATED_TO',
-        weight: 1, // FIX: Added missing weight property
-        sign: 1,
-        valid_time: { start: timeFilter - 5, end: timeFilter + 5 },
-        // FIX: Added missing 'method' and 'sourceClassification' properties to Provenance object
-        provenance: [{ source: 'Manual Link', confidence: 1.0, method: 'archival', sourceClassification: 'primary', timestamp: Date.now() }],
-        is_hypothetical: true,
-      });
-      
-      refresh();
-      notify.success("Connection created");
-    } catch (e) {
-      notify.error("Failed to create connection");
-    } finally {
-      setEdgeMode({ active: false });
-      setEdgeDialog({ open: false, relationship: '' });
-    }
-  };
 
   return (
     <div className="relative w-full h-full">

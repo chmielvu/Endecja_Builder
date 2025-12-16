@@ -4,15 +4,13 @@ import path from 'path';
 
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
-  // `process.cwd()` is standard in Node.js environments, so casting to `any` resolves potential TypeScript conflicts
-  // if `process` is incorrectly typed in some configurations for this file.
   const env = loadEnv(mode, (process as any).cwd(), '');
 
   return {
     plugins: [react()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './src'),
+        '@': path.resolve((process as any).cwd(), '.'), // Map '@' to the project root
         buffer: 'buffer', // Force resolution to the installed package
       },
     },
@@ -27,6 +25,12 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       include: ['buffer', 'long', 'graphology', 'sigma', 'lucide-react', 'react-hook-form', 'zod', '@hookform/resolvers/zod'],
       exclude: ['@xenova/transformers']
+    },
+    server: {
+      fs: {
+        // Allow serving files from one level up to the project root
+        allow: ['..']
+      }
     }
   };
 });

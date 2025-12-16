@@ -1,10 +1,12 @@
 
+
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { MultiDirectedGraph } from 'graphology';
 import { NodeAttributes, EdgeAttributes, GraphAttributes, NodeType, Jurisdiction, AppMode } from '../types';
 import { fromJSON, toJSON } from '../graph/hydrate';
 import { notify } from '../lib/utils';
+import { embeddingService } from '../ml/embeddings';
 
 const SNAPSHOT_STORAGE_KEY = 'endecja_snapshots';
 const BUILDER_DRAFT_KEY = 'endecja-builder-draft';
@@ -31,6 +33,9 @@ interface GraphState {
   isEmbeddingLoaded: boolean;
   snapshots: Snapshot[];
   
+  // Camera Control
+  cameraSignal: { type: 'fit' | 'in' | 'out', ts: number } | null;
+
   // Mode Management
   mode: AppMode;
   builderDraft: string | null;
@@ -48,6 +53,7 @@ interface GraphState {
   setLoading: (loading: boolean, status?: string) => void;
   setFrustrationIndex: (index: number | null) => void;
   setEmbeddingLoaded: (loaded: boolean) => void;
+  triggerCamera: (type: 'fit' | 'in' | 'out') => void;
 
   // Mutations (History Aware)
   addNodeMinimal: (category: NodeType, x: number, y: number, label?: string) => string; // Updated return type
@@ -86,8 +92,9 @@ export const useGraphStore = create<GraphState>()(
     isLoading: false,
     loadingStatus: '',
     frustrationIndex: null,
-    isEmbeddingLoaded: false,
+    isEmbeddingLoaded: typeof window !== 'undefined' ? embeddingService.getIsEmbeddingLoaded() : false, // Initialize from service
     snapshots: [],
+    cameraSignal: null,
     
     mode: (typeof window !== 'undefined' ? localStorage.getItem(MODE_KEY) as AppMode : null) || 'analysis',
     builderDraft: typeof window !== 'undefined' ? localStorage.getItem(BUILDER_DRAFT_KEY) : null,
@@ -128,6 +135,7 @@ export const useGraphStore = create<GraphState>()(
     setLoading: (loading, status = '') => set({ isLoading: loading, loadingStatus: status }),
     setFrustrationIndex: (index) => set({ frustrationIndex: index }),
     setEmbeddingLoaded: (loaded) => set({ isEmbeddingLoaded: loaded }),
+    triggerCamera: (type) => set({ cameraSignal: { type, ts: Date.now() } }),
     refresh: () => set(s => ({ version: s.version + 1 })),
 
     addNodeMinimal: (category, x, y, label) => {

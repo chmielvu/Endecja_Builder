@@ -1,8 +1,11 @@
+
+
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { MultiDirectedGraph } from 'graphology';
 import { ML_CONFIG } from '../config/mlConfig';
 import { useGraphStore } from '../state/graphStore';
 import { Jurisdiction, NodeType, Provenance } from '../types';
+import { getNodeColor, getEdgeColor } from '../utils/visuals';
 
 declare const process: {
   env: {
@@ -306,7 +309,7 @@ You employ multiple methodological lenses:
 5. **Counterfactual Reasoning**: Consider how removing key nodes would alter history
 
 ## NetworkX Implementation Requirements
-Your code MUST:
+You MUST implement the following analysis using Python with NetworkX in the code_execution tool:
 - Load the graph as nx.MultiDiGraph with 'sign' edge attribute
 - Normalize betweenness centrality (divided by (n-1)(n-2)/2)
 - Use Louvain algorithm for community detection (modularity optimization)
@@ -322,6 +325,7 @@ Your code MUST:
   * <0.1 = stable alliance structure
   * 0.1-0.3 = moderate tensions
   * >0.3 = high structural instability, prediction: fracture
+  * >0.5 = extreme structural instability, highly likely fracture
 - **Communities**: Likely represent ideological factions, generational divides, or regional bases
 
 ## Historical Validity Checks
@@ -457,25 +461,6 @@ export function applyGraphOperations(
   
   console.log(`Applied operations: ${nodesAdded} nodes added, ${nodesUpdated} nodes updated, ${edgesAdded} edges added`);
   store.refresh();
-}
-
-function getNodeColor(category: NodeType): string {
-  const colors: Record<NodeType, string> = {
-    [NodeType.PERSON]: '#2c241b',
-    [NodeType.ORGANIZATION]: '#8b0000',
-    [NodeType.CONCEPT]: '#1e3a5f',
-    [NodeType.EVENT]: '#d4af37',
-    [NodeType.PUBLICATION]: '#704214',
-    [NodeType.MYTH]: '#7b2cbf',
-    [NodeType.LOCATION]: '#704214'
-  };
-  return colors[category] || '#704214';
-}
-
-function getEdgeColor(sign: number): string {
-  if (sign === -1) return '#991b1b';
-  if (sign === 1) return '#3d5c45';
-  return '#9ca3af';
 }
 
 // ============================================================================

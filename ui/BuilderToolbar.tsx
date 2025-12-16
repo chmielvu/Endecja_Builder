@@ -1,26 +1,25 @@
 
+
 import React, { useState } from 'react';
 import { useGraphStore } from '../state/graphStore';
 import { exportPublicGraph, exportStaticViewer } from '../utils/builderExport';
 import { 
   ArrowLeft, Undo, Redo, Plus, Eye, Download, 
-  Save, Upload, Sparkles, ZoomIn
+  Save, Upload, Sparkles, ZoomIn, ZoomOut, Maximize
 } from 'lucide-react';
 
 export const BuilderToolbar: React.FC = () => {
   const { 
     mode, setMode, graph, undo, redo, canUndo, canRedo, 
-    addNodeMinimal, saveBuilderDraft, loadBuilderDraft 
+    addNodeMinimal, saveBuilderDraft, loadBuilderDraft, triggerCamera 
   } = useGraphStore();
   const [showExportMenu, setShowExportMenu] = useState(false);
 
   const handleAddNode = () => {
-    // Add node at canvas center (approximated for now)
     addNodeMinimal('person' as any, 0, 0);
   };
 
   const handlePreview = () => {
-    // Open preview in new window (simplified)
     const previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent("<html><body><h1>Preview Not Available in Scaffold</h1><p>Use Export Static Viewer to see full result.</p></body></html>")}`;
     window.open(previewUrl, '_blank');
   };
@@ -92,13 +91,30 @@ export const BuilderToolbar: React.FC = () => {
           Add Node
         </button>
 
-        {/* Zoom Fit (Placeholder) */}
-        <button 
-          className="p-2 bg-endecja-paper text-endecja-base rounded hover:bg-endecja-gold hover:text-endecja-base transition-all"
-          title="Zoom to Fit"
-        >
-          <ZoomIn size={18} />
-        </button>
+        {/* Zoom Controls */}
+        <div className="flex bg-endecja-paper rounded border border-endecja-gold/20 overflow-hidden ml-2">
+            <button 
+                onClick={() => triggerCamera('out')}
+                className="p-2 hover:bg-endecja-gold hover:text-endecja-base transition-colors"
+                title="Zoom Out"
+            >
+                <ZoomOut size={18} />
+            </button>
+            <button 
+                onClick={() => triggerCamera('fit')}
+                className="p-2 hover:bg-endecja-gold hover:text-endecja-base transition-colors border-x border-endecja-gold/20"
+                title="Fit to Screen"
+            >
+                <Maximize size={18} />
+            </button>
+            <button 
+                onClick={() => triggerCamera('in')}
+                className="p-2 hover:bg-endecja-gold hover:text-endecja-base transition-colors"
+                title="Zoom In"
+            >
+                <ZoomIn size={18} />
+            </button>
+        </div>
 
         <div className="h-8 w-px bg-endecja-gold/30 mx-2"></div>
 

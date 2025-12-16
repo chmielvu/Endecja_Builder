@@ -1,54 +1,117 @@
+
+
 import { MultiDirectedGraph } from 'graphology';
-import { GraphData, NodeAttributes, EdgeAttributes, GraphAttributes, NodeType, Jurisdiction, Provenance, DateRange } from '../types';
+import { GraphData, NodeAttributes, EdgeAttributes, GraphAttributes, NodeType, Jurisdiction, Provenance, DateRange, Stance, NodeImage } from '../types';
 import { GLOBAL_SEED, SeededRandom } from '../utils/seeds';
 import { seedData } from './seedData';
+import * as z from 'zod';
+// Import color utility functions from utils/visuals to avoid circular dependency
+import { getNodeColor, getEdgeColor } from '../utils/visuals';
 
 const rng = new SeededRandom(GLOBAL_SEED);
 
-// --- Validation Helpers ---
+// --- Zod Schemas for Runtime Validation ---
 
-function validateNodeSchema(node: any): boolean {
-  if (!node || typeof node !== 'object') {
-    console.warn('Invalid node: Not an object', node);
-    return false;
-  }
-  // Check for ID (Graphology export uses 'key', Seed uses 'id')
-  const id = node.id || node.key;
-  if (typeof id !== 'string' || !id) {
-    console.warn('Invalid node: Missing or invalid ID/Key', node);
-    return false;
-  }
-  return true;
-}
+const zDateRange = z.object({
+  start: z.number().int().min(1000, "Year must be at least 1000").default(1890),
+  end: z.number().int().min(1000, "Year must be at least 1000").default(1945),
+  granularity: z.enum(['day', 'month', 'year', 'decade']).optional(),
+  circa: z.boolean().optional(),
+}).refine(data => data.start <= data.end, {
+  message: "Start year cannot be after end year",
+  path: ["start"],
+});
 
-function validateEdgeSchema(edge: any): boolean {
-  if (!edge || typeof edge !== 'object') {
-    console.warn('Invalid edge: Not an object', edge);
-    return false;
-  }
-  if (typeof edge.source !== 'string' || !edge.source) {
-    console.warn('Invalid edge: Missing source', edge);
-    return false;
-  }
-  if (typeof edge.target !== 'string' || !edge.target) {
-    console.warn('Invalid edge: Missing target', edge);
-    return false;
-  }
-  return true;
-}
+const zProvenance = z.object({
+  source: z.string().min(1, "Source is required"),
+  confidence: z.number().min(0).max(1).default(0.7),
+  method: z.enum(['archival', 'inference', 'interpolation']).default('inference'),
+  sourceClassification: z.enum(['primary', 'secondary', 'hostile', 'myth', 'ai_inference']).default('ai_inference'),
+  model_tag: z.string().optional(),
+  timestamp: z.number().int().default(() => Date.now()),
+  notes: z.string().optional(),
+});
+
+const zNodeImage = z.object({
+  dataUrl: z.string().regex(/^data:image\/(jpeg|png|gif|webp);base64,/, "Invalid base64 image data URL"),
+  caption: z.string().optional(),
+  credit: z.string().optional(),
+  creditUrl: z.string().url().optional(),
+  alt: z.string().optional(),
+  isPrimary: z.boolean().default(false),
+});
+
+const zNodeAttributes = z.object({
+  label: z.string().min(1, "Label is required"),
+  category: z.nativeEnum(NodeType).default(NodeType.CONCEPT),
+  description: z.string().optional(),
+  jurisdiction: z.nativeEnum(Jurisdiction).default(Jurisdiction.OTHER),
+  valid_time: zDateRange,
+  x: z.number().optional(),
+  y: z.number().optional(),
+  size: z.number().min(1).optional(),
+  color: z.string().optional(),
+
+  // Historical attributes
+  financial_weight: z.number().min(0).max(1).default(0.5),
+  secrecy_level: z.number().int().min(1).max(5).default(1),
+
+  // ML attributes
+  radicalization_vector: z.instanceof(Float32Array).optional(),
+  community: z.number().int().optional(),
+  betweenness: z.number().optional(),
+
+  // NEW: Visual Builder Mode attributes
+  descriptionHtml: z.string().optional(),
+  images: z.array(zNodeImage).default([]),
+  provenance: z.array(zProvenance).min(1, "Provenance is required").default([{
+    source: 'LLM Validator Default',
+    confidence: 0.5,
+    method: 'inference',
+    sourceClassification: 'ai_inference',
+    timestamp: Date.now(),
+    notes: 'Default provenance for repaired node'
+  }]),
+});
+
+const zEdgeAttributes = z.object({
+  relationshipType: z.string().min(1, "Relationship type is required").default('RELATED_TO'),
+  weight: z.number().min(0).default(1),
+  sign: z.union([z.literal(1), z.literal(-1), z.literal(0)]).default(0),
+  stance: z.nativeEnum(Stance).optional(),
+  valid_time: zDateRange,
+
+  // Sigma.js rendering properties, often modified by reducers
+  color: z.string().optional(),
+  size: z.number().optional(),
+
+  // Logic
+  is_hypothetical: z.boolean().default(false),
+
+  // NEW: Visual Builder Mode attributes
+  descriptionText: z.string().optional(),
+  provenance: z.array(zProvenance).min(1, "Provenance is required").default([{
+    source: 'LLM Validator Default',
+    confidence: 0.5,
+    method: 'inference',
+    sourceClassification: 'ai_inference',
+    timestamp: Date.now(),
+    notes: 'Default provenance for repaired edge'
+  }]),
+});
+
 
 // --- Helpers ---
 
+// Existing helpers, adapted for Zod defaults if needed
 function parseDateRange(dateStr?: string): DateRange {
-  if (!dateStr) return { start: 1890, end: 1940 }; // Default range
+  if (!dateStr) return { start: 1890, end: 1940 };
 
-  // Handle "YYYY-YYYY"
   const rangeMatch = dateStr.match(/^(\d{4})-(\d{4})$/);
   if (rangeMatch) {
     return { start: parseInt(rangeMatch[1]), end: parseInt(rangeMatch[2]) };
   }
 
-  // Handle "YYYY" or "YYYY-MM"
   const singleMatch = dateStr.match(/^(\d{4})/);
   if (singleMatch) {
     const year = parseInt(singleMatch[1]);
@@ -69,33 +132,19 @@ function determineJurisdiction(id: string, label: string): Jurisdiction {
 
 function mapNodeType(typeStr?: string): NodeType {
   if (!typeStr) return NodeType.LOCATION;
-  switch (typeStr.toLowerCase()) {
-    case 'person': return NodeType.PERSON;
-    case 'organization': return NodeType.ORGANIZATION;
-    case 'event': return NodeType.EVENT;
-    case 'publication': return NodeType.PUBLICATION;
-    case 'concept': return NodeType.CONCEPT;
-    case 'myth': return NodeType.MYTH;
-    default: return NodeType.LOCATION;
+  const normalizedType = typeStr.toLowerCase();
+  if (Object.values(NodeType).includes(normalizedType as NodeType)) {
+    return normalizedType as NodeType;
   }
+  return NodeType.LOCATION;
 }
 
 function determineEdgeSign(rel: string): 1 | -1 | 0 {
-  const negative = ['rywal', 'przeciw', 'walka', 'odłącz', 'sprzeciw'];
+  const negative = ['rywal', 'przeciw', 'walka', 'odłącz', 'sprzeciw', 'opposition', 'conflict'];
+  const positive = ['alliance', 'support', 'founded', 'collaborated', 'mentor'];
   if (negative.some(k => rel.toLowerCase().includes(k))) return -1;
-  return 1;
-}
-
-function getNodeColor(type: NodeType): string {
-  switch (type) {
-    case NodeType.PERSON: return '#2c241b'; // Ink
-    case NodeType.ORGANIZATION: return '#8b0000'; // Dark Red
-    case NodeType.CONCEPT: return '#1e3a5f'; // Navy
-    case NodeType.EVENT: return '#d4af37'; // Gold
-    case NodeType.PUBLICATION: return '#704214'; // Sepia
-    case NodeType.MYTH: return '#7b2cbf'; // Myth Purple
-    default: return '#704214';
-  }
+  if (positive.some(k => rel.toLowerCase().includes(k))) return 1;
+  return 0; // Default to neutral
 }
 
 // --- Main Functions ---
@@ -113,109 +162,150 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
 
   // 1. Bulk Import Nodes
   nodes.forEach((n: any, i: number) => {
-    if (!validateNodeSchema(n)) return;
-
     // Support both 'id' (seed) and 'key' (graphology)
     const id = n.id || n.key;
+    if (typeof id !== 'string' || !id) {
+      console.warn('Skipping node due to missing or invalid ID:', n);
+      return;
+    }
 
-    // STRUCTURED INITIAL LAYOUT
-    // Arrange nodes in a circle by default to ensure visibility and prevent overlap
-    const angle = (i / nodes.length) * 2 * Math.PI;
-    const radius = 30 + (i % 3) * 5; // Slight variation in radius for organic look
-    const x = radius * Math.cos(angle);
-    const y = radius * Math.sin(angle);
+    let parsedAttrs: z.infer<typeof zNodeAttributes>;
+    const result = zNodeAttributes.safeParse(n);
 
-    const valid_time = parseDateRange(n.dates);
-    const jurisdiction = determineJurisdiction(id, n.label || id);
-    const nodeType = mapNodeType(n.type || n.category); // Handle both formats
+    if (!result.success) {
+      console.warn(`Node ${id} failed Zod validation. Attempting partial repair:`, result.error.issues);
+      // Attempt to build valid attributes from partial data and defaults
+      const partialAttrs = result.error.issues.reduce((acc: any, issue) => {
+        // Collect valid paths and existing values
+        const path = issue.path.join('.');
+        let currentValue = n;
+        for (const p of issue.path) {
+          if (currentValue && typeof currentValue === 'object' && p in currentValue) {
+            currentValue = currentValue[p];
+          } else {
+            currentValue = undefined;
+            break;
+          }
+        }
+        if (currentValue !== undefined) {
+          let obj = acc;
+          for (let k = 0; k < issue.path.length - 1; k++) {
+            const key = issue.path[k];
+            if (!(key in obj)) {
+              obj[key] = typeof issue.path[k+1] === 'number' ? [] : {};
+            }
+            obj = obj[key];
+          }
+          obj[issue.path[issue.path.length - 1]] = currentValue;
+        }
+        return acc;
+      }, {});
 
-    const attributes: NodeAttributes = {
-      label: n.label || id,
-      category: nodeType, // Renamed from type
-      description: n.description,
-      jurisdiction: jurisdiction,
-      valid_time: valid_time,
-      x: x,
-      y: y,
-      size: (n.importance || 0.5) * 15 + 5,
-      color: getNodeColor(nodeType),
-      financial_weight: rng.range(0.1, 1.0),
-      secrecy_level: n.type === 'organization' && (n.label?.includes('Liga') || n.label?.includes('Zet')) ? 5 : 1,
-      provenance: [{
-        source: 'Endecja Database v1.0',
-        confidence: 1.0,
-        method: 'archival',
-        sourceClassification: n.myth_related ? 'myth' : 'primary', // Dynamically set source classification
-        timestamp: Date.now()
-      }]
-    };
+      // Apply intelligent defaults if not provided in raw data
+      partialAttrs.label = partialAttrs.label || id;
+      partialAttrs.category = partialAttrs.category ? mapNodeType(partialAttrs.category) : NodeType.CONCEPT;
+      partialAttrs.jurisdiction = partialAttrs.jurisdiction ? determineJurisdiction(id, partialAttrs.label) : Jurisdiction.OTHER;
+      partialAttrs.valid_time = partialAttrs.valid_time ? zDateRange.parse(partialAttrs.valid_time) : parseDateRange(n.dates);
+      partialAttrs.provenance = partialAttrs.provenance || [{
+        source: 'LLM Validation Repair',
+        confidence: 0.6,
+        method: 'inference',
+        sourceClassification: 'ai_inference',
+        timestamp: Date.now(),
+        notes: `Original node data failed validation: ${result.error.issues.map(e => e.message).join(', ')}`
+      }];
+      
+      parsedAttrs = zNodeAttributes.parse(partialAttrs); // Final parse after defaults
+      // Ensure specific defaults if not provided by Zod defaults
+      parsedAttrs.color = parsedAttrs.color || getNodeColor(parsedAttrs.category);
+      parsedAttrs.size = parsedAttrs.size || (parsedAttrs.financial_weight || 0.5) * 15 + 5;
+      
+    } else {
+      parsedAttrs = result.data;
+      // Ensure color and size are set, even if Zod defaults handled some things
+      parsedAttrs.color = parsedAttrs.color || getNodeColor(parsedAttrs.category);
+      parsedAttrs.size = parsedAttrs.size || (parsedAttrs.financial_weight || 0.5) * 15 + 5;
+    }
+
+    // Assign initial layout if not present
+    if (parsedAttrs.x === undefined || parsedAttrs.y === undefined) {
+      const angle = (i / nodes.length) * 2 * Math.PI;
+      const radius = 30 + (i % 3) * 5;
+      parsedAttrs.x = radius * Math.cos(angle);
+      parsedAttrs.y = radius * Math.sin(angle);
+    }
 
     if (!graph.hasNode(id)) {
-      graph.addNode(id, attributes);
+      graph.addNode(id, parsedAttrs);
     }
   });
 
   // 2. Bulk Import Edges
   edges.forEach((e: any, idx: number) => {
-    if (!validateEdgeSchema(e)) return;
+    const sourceId = e.source;
+    const targetId = e.target;
+    const edgeKey = e.key || `e_${idx}`;
 
-    if (graph.hasNode(e.source) && graph.hasNode(e.target)) {
-      const valid_time = parseDateRange(e.dates);
-      const sign = determineEdgeSign(e.relationship || '');
-      
-      const attributes: EdgeAttributes = {
-        relationshipType: e.relationship || 'arrow', // Use new name 'relationshipType'
-        weight: 1,
-        sign: sign,
-        valid_time: valid_time,
-        is_hypothetical: false,
-        provenance: [{
-          source: 'Endecja Database v1.0',
-          confidence: 1.0,
-          method: 'archival',
-          sourceClassification: 'primary', // Default for edges
-          timestamp: Date.now()
-        }]
-      };
+    if (!graph.hasNode(sourceId) || !graph.hasNode(targetId)) {
+      console.warn(`Skipping edge ${edgeKey}: Source (${sourceId}) or target (${targetId}) node does not exist.`, e);
+      return;
+    }
 
-      const key = e.key || `e_${idx}`;
-      if (!graph.hasEdge(key)) {
-         graph.addEdgeWithKey(key, e.source, e.target, attributes);
-      }
+    let parsedAttrs: z.infer<typeof zEdgeAttributes>;
+    // Graphology export puts attributes directly, raw seed puts them flat
+    const edgeToParse = e.attributes || e;
+    const result = zEdgeAttributes.safeParse(edgeToParse);
+
+    if (!result.success) {
+      console.warn(`Edge ${edgeKey} failed Zod validation. Skipping:`, result.error.issues);
+      return; // Skip invalid edges
+    } else {
+      parsedAttrs = result.data;
+      // Ensure color is set, even if Zod defaults handled some things
+      parsedAttrs.color = parsedAttrs.color || getEdgeColor(parsedAttrs.sign);
+      parsedAttrs.valid_time = parsedAttrs.valid_time || parseDateRange(e.dates);
+    }
+    
+    if (!graph.hasEdge(edgeKey)) {
+      graph.addEdgeWithKey(edgeKey, sourceId, targetId, parsedAttrs);
     }
   });
 
-  // 3. Process Myths as Nodes and Connect to Related Nodes
+  // 3. Process Myths as Nodes and Connect to Related Nodes (with Zod validation)
   if (data.myths && Array.isArray(data.myths)) {
     data.myths.forEach((myth: any, i: number) => {
-      // Create Myth Node
       const mythId = myth.id;
       if (!graph.hasNode(mythId)) {
-        // Position myths in a separate cluster or outer ring
-        const angle = (i / data.myths.length) * 2 * Math.PI;
-        const radius = 45; 
-        
-        const attributes: NodeAttributes = {
+        let mythAttrs: z.infer<typeof zNodeAttributes>;
+        const mythNodeData = {
           label: myth.title,
-          category: NodeType.MYTH, // Renamed
+          category: NodeType.MYTH,
           description: `MIT: ${myth.claim}\n\nPRAWDA: ${myth.truth}`,
           jurisdiction: Jurisdiction.OTHER,
-          valid_time: { start: 1890, end: 1945 },
-          x: radius * Math.cos(angle),
-          y: radius * Math.sin(angle),
-          size: 25, // Myths are prominent
+          valid_time: parseDateRange("1890-1945"),
+          size: 25,
           color: getNodeColor(NodeType.MYTH),
-          financial_weight: 0,
-          secrecy_level: 1,
           provenance: [{
             source: 'Historical Analysis (Myths)',
             confidence: 1.0,
             method: 'inference',
-            sourceClassification: 'myth', // Explicitly 'myth' for myths
+            sourceClassification: 'myth',
             timestamp: Date.now()
-          }]
+          }],
+          // Position myths in a separate cluster or outer ring
+          x: 45 * Math.cos((i / data.myths.length) * 2 * Math.PI),
+          y: 45 * Math.sin((i / data.myths.length) * 2 * Math.PI),
+          ...myth // Spread any other properties
         };
-        graph.addNode(mythId, attributes);
+        const result = zNodeAttributes.safeParse(mythNodeData);
+        if (!result.success) {
+          console.warn(`Myth node ${mythId} failed Zod validation. Skipping:`, result.error.issues);
+          return;
+        }
+        mythAttrs = result.data;
+        mythAttrs.color = mythAttrs.color || getNodeColor(mythAttrs.category);
+        mythAttrs.size = mythAttrs.size || 25; // Ensure myth size
+        graph.addNode(mythId, mythAttrs);
       }
 
       // Create Edges to Related Nodes
@@ -224,21 +314,29 @@ export function hydrateGraph(data: any): MultiDirectedGraph<NodeAttributes, Edge
           if (graph.hasNode(targetId)) {
             const edgeKey = `edge_myth_${mythId}_${targetId}`;
             if (!graph.hasEdge(edgeKey)) {
-              graph.addEdgeWithKey(edgeKey, mythId, targetId, {
-                relationshipType: 'dotyczy', // 'relates to' - Use new name
+              const edgeData = {
+                relationshipType: 'dotyczy',
                 weight: 2,
-                sign: 0, // Neutral/Informational
-                valid_time: { start: 1890, end: 1945 },
+                sign: 0,
+                valid_time: parseDateRange("1890-1945"),
                 is_hypothetical: false,
-                color: '#7b2cbf', // Match myth node color
+                color: '#7b2cbf',
                 provenance: [{
                   source: 'Myth Analysis',
                   confidence: 1.0,
                   method: 'inference',
-                  sourceClassification: 'myth', // Edges related to myths are also 'myth'
+                  sourceClassification: 'myth',
                   timestamp: Date.now()
                 }]
-              });
+              };
+              const result = zEdgeAttributes.safeParse(edgeData);
+              if (!result.success) {
+                console.warn(`Myth edge ${edgeKey} failed Zod validation. Skipping:`, result.error.issues);
+                return;
+              }
+              const edgeAttrs = result.data;
+              edgeAttrs.color = edgeAttrs.color || getEdgeColor(edgeAttrs.sign);
+              graph.addEdgeWithKey(edgeKey, mythId, targetId, edgeAttrs);
             }
           }
         });
@@ -265,19 +363,38 @@ export function fromJSON(jsonStr: string): MultiDirectedGraph<NodeAttributes, Ed
   }
 
   // Check if it looks like a Graphology export (nodes have 'key' and 'attributes')
-  const isGraphologyExport = data.nodes && data.nodes.length > 0 && 'key' in data.nodes[0] && 'attributes' in data.nodes[0];
+  const isGraphologyExport = data.nodes && Array.isArray(data.nodes) && data.nodes.length > 0 && 
+                             'key' in data.nodes[0] && 'attributes' in data.nodes[0];
 
   if (isGraphologyExport) {
     const graph = new MultiDirectedGraph<NodeAttributes, EdgeAttributes, GraphAttributes>();
     try {
-        graph.import(data);
+        // For graphology exports, re-hydrate attributes through Zod where possible
+        // This is a more complex task than simply importing as graphology expects a specific format.
+        // The most robust way is to re-map to our internal structure and then hydrate.
+        const hydratedNodes = data.nodes.map((n: any) => {
+          const parsed = zNodeAttributes.safeParse(n.attributes);
+          return {
+            ...n,
+            attributes: parsed.success ? parsed.data : { ...n.attributes, ...zNodeAttributes.parse({}) } // Default valid attrs
+          };
+        });
+        const hydratedEdges = data.edges.map((e: any) => {
+          const parsed = zEdgeAttributes.safeParse(e.attributes);
+          return {
+            ...e,
+            attributes: parsed.success ? parsed.data : { ...e.attributes, ...zEdgeAttributes.parse({}) } // Default valid attrs
+          };
+        });
+
+        graph.import({ ...data, nodes: hydratedNodes, edges: hydratedEdges });
         return graph;
     } catch (e) {
-        console.warn("Graphology import failed, falling back to manual hydration", e);
+        console.warn("Graphology import failed even with Zod re-mapping, falling back to basic hydration logic", e);
     }
   }
 
-  // Fallback: Use hydration logic for raw/seed-like data
+  // Fallback: Use hydration logic for raw/seed-like data or if graphology import failed
   return hydrateGraph(data);
 }
 
