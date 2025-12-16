@@ -1,3 +1,4 @@
+// state/graphStore.ts
 import { create } from 'zustand';
 import { MultiDirectedGraph } from 'graphology';
 import { NodeAttributes, EdgeAttributes, GraphAttributes, NodeType, Jurisdiction } from '../types';
@@ -11,23 +12,16 @@ interface Snapshot {
 
 interface GraphState {
   graph: MultiDirectedGraph<NodeAttributes, EdgeAttributes, GraphAttributes>;
-  version: number; // Increment to force re-renders
-  
-  // UI State
+  version: number; 
   selectedNode: string | null;
   hoveredNode: string | null;
-  timeFilter: number; // Year
+  timeFilter: number;
   isLoading: boolean;
   loadingStatus: string;
-  
-  // Analysis State
   frustrationIndex: number | null;
   isEmbeddingLoaded: boolean;
-  
-  // Builder State
   snapshots: Snapshot[];
 
-  // Actions
   setGraph: (graph: MultiDirectedGraph<NodeAttributes, EdgeAttributes, GraphAttributes>) => void;
   selectNode: (nodeId: string | null) => void;
   setHoveredNode: (nodeId: string | null) => void;
@@ -36,10 +30,8 @@ interface GraphState {
   setFrustrationIndex: (index: number) => void;
   setEmbeddingLoaded: (loaded: boolean) => void;
   updateNodeAttribute: (nodeId: string, key: keyof NodeAttributes, value: any) => void;
-  addNodeMinimal: (category: NodeType, x: number, y: number) => string; // Returns new node ID
+  addNodeMinimal: (category: NodeType, x: number, y: number) => string;
   refresh: () => void;
-  
-  // Snapshot Actions
   addSnapshot: (name: string) => void;
   loadSnapshot: (graphJSON: string) => void;
   deleteSnapshot: (name: string) => void;
@@ -60,46 +52,51 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   isEmbeddingLoaded: false,
   snapshots: [],
 
-  setGraph: (graph) => set({ graph, version: 0, selectedNode: null }), // Clear selection on new graph
+  setGraph: (graph) => set({ graph, version: 0, selectedNode: null }),
   selectNode: (nodeId) => set({ selectedNode: nodeId }),
   setHoveredNode: (nodeId) => set({ hoveredNode: nodeId }),
   setTimeFilter: (year) => set({ timeFilter: year }),
   setLoading: (loading, status) => set({ isLoading: loading, loadingStatus: status || '' }),
   setFrustrationIndex: (index) => set({ frustrationIndex: index }),
   setEmbeddingLoaded: (loaded) => set({ isEmbeddingLoaded: loaded }),
+  
   updateNodeAttribute: (nodeId, key, value) => set((state) => {
     state.graph.setNodeAttribute(nodeId, key, value);
-    return { graph: state.graph, version: state.version + 1 };
+    return { version: state.version + 1 };
   }),
+
   addNodeMinimal: (category, x, y) => {
-    const newNodeId = `node_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    const { timeFilter, graph } = get();
+    const newNodeId = `node_${Date.now()}`;
+    
     set((state) => {
       state.graph.addNode(newNodeId, {
-        label: `New ${category}`,
+        label: `Nowy ${category}`,
         category: category,
-        jurisdiction: Jurisdiction.OTHER, // Default
-        valid_time: { start: 1900, end: 1939 }, // Default
+        jurisdiction: Jurisdiction.OTHER,
+        // Node starts in the currently filtered year
+        valid_time: { start: timeFilter, end: 1939 }, 
         x: x,
         y: y,
         size: 10,
-        color: '#aaaaaa', // Neutral color, will be updated by nodeReducer
+        color: '#3d5c45',
         financial_weight: 0,
         secrecy_level: 1,
         provenance: [{
-          source: 'Manual Creation',
+          source: 'Manualna Kreacja',
           confidence: 1.0,
           method: 'archival',
-          sourceClassification: 'primary', // Default
+          sourceClassification: 'primary',
           timestamp: Date.now(),
         }]
       });
-      return { graph: state.graph, version: state.version + 1, selectedNode: newNodeId };
+      return { version: state.version + 1, selectedNode: newNodeId };
     });
     return newNodeId;
   },
+
   refresh: () => set((state) => ({ version: state.version + 1 })),
 
-  // Snapshot implementation
   addSnapshot: (name) => {
     const { graph, snapshots } = get();
     const newSnapshot: Snapshot = {
@@ -111,27 +108,28 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     localStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(updatedSnapshots));
     set({ snapshots: updatedSnapshots });
   },
+
   loadSnapshot: (graphJSON) => {
     try {
       const newGraph = fromJSON(graphJSON);
       set({ graph: newGraph, version: get().version + 1, selectedNode: null });
     } catch (e) {
       console.error("Failed to load snapshot", e);
-      alert("Error loading snapshot. The data may be corrupt.");
     }
   },
+
   deleteSnapshot: (name) => {
     const updatedSnapshots = get().snapshots.filter(s => s.name !== name);
     localStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(updatedSnapshots));
     set({ snapshots: updatedSnapshots });
   },
+
   loadSnapshotsFromStorage: () => {
     const storedSnapshots = localStorage.getItem(SNAPSHOT_STORAGE_KEY);
     if (storedSnapshots) {
       try {
         set({ snapshots: JSON.parse(storedSnapshots) });
       } catch (e) {
-        console.error("Failed to parse snapshots from localStorage", e);
         set({ snapshots: [] });
       }
     }
