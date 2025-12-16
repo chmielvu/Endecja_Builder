@@ -1,3 +1,4 @@
+
 export enum NodeType {
   PERSON = 'person',
   ORGANIZATION = 'organization',
@@ -43,6 +44,16 @@ export interface Provenance {
   notes?: string;
 }
 
+// NEW: Image metadata for Visual Builder Mode
+export interface NodeImage {
+  dataUrl: string; // Base64 encoded image
+  caption?: string; // Display caption
+  credit?: string; // Source/photographer credit
+  creditUrl?: string; // Link to source
+  alt?: string; // Accessibility text
+  isPrimary: boolean; // Primary thumbnail for node rendering
+}
+
 export interface NodeAttributes {
   label: string;
   category: NodeType; // Renamed from type to avoid conflict with Sigma's reserved 'type'
@@ -63,6 +74,9 @@ export interface NodeAttributes {
   community?: number;
   betweenness?: number;
   
+  // NEW: Visual Builder Mode attributes
+  descriptionHtml?: string; // Rich text HTML from TipTap
+  images?: NodeImage[]; // Image gallery
   provenance: Provenance[];
 }
 
@@ -80,6 +94,8 @@ export interface EdgeAttributes {
   // Logic
   is_hypothetical: boolean;
   
+  // NEW: Visual Builder Mode attributes
+  descriptionText?: string; // Short description for edges
   provenance: Provenance[];
 }
 
@@ -111,3 +127,38 @@ export interface GraphData {
   nodes: { key: string; attributes: NodeAttributes }[];
   edges: { key: string; source: string; target: string; attributes: EdgeAttributes }[];
 }
+
+// NEW: Export format for public graphs
+export interface PublicGraphExport {
+  version: string;
+  title: string;
+  description?: string;
+  creator?: string;
+  exportDate: string;
+  graph: {
+    nodes: Array<{
+      id: string;
+      label: string;
+      type: NodeType;
+      descriptionHtml?: string;
+      images?: NodeImage[];
+      jurisdiction: Jurisdiction;
+      timeRange: DateRange;
+      position: { x: number; y: number };
+      size: number;
+      color: string;
+    }>;
+    edges: Array<{
+      id: string;
+      source: string;
+      target: string;
+      relationshipType: string;
+      sign: number;
+      descriptionText?: string;
+      color?: string;
+    }>;
+  };
+}
+
+// NEW: Mode type for app state
+export type AppMode = 'analysis' | 'builder';

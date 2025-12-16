@@ -174,7 +174,8 @@ export const Sidebar: React.FC = () => {
     try {
         const result = await architectAnalysis(graph); // Pass the full graph
         applyGraphOperations(graph, result.operations); // Apply operations suggested by Architect
-        setSummaryText(result.historicalSummary);
+        // FIX: Changed 'historicalSummary' to 'historicalInterpretation'
+        setSummaryText(result.historicalInterpretation);
         setModalTitle('Architect Structural Analysis');
         setFrustrationIndex(result.metrics.frustrationIndex); // Update local state for frustration index from Architect
         // Note: Community and betweenness are now applied directly to graph via applyGraphOperations

@@ -22,14 +22,7 @@
         window.global = window;
       }
     </script>
-    <!-- Load Buffer from CDN for immediate availability -->
-    <script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.min.js"></script>
-    <script>
-      if (!window.Buffer && window.buffer) {
-        window.Buffer = window.buffer.Buffer;
-      }
-    </script>
-
+    
     <script>
       tailwind.config = {
         theme: {
@@ -106,10 +99,13 @@
   "imports": {
     "react": "https://esm.sh/react@^19.2.3",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "buffer": "https://esm.sh/buffer@^6.0.3",
     "react/": "https://esm.sh/react@^19.2.3/",
     "vite": "https://esm.sh/vite@^7.3.0",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "path": "https://esm.sh/path@^0.12.7",
     "zustand": "https://esm.sh/zustand@^5.0.9",
+    "zustand/": "https://esm.sh/zustand@^5.0.9/",
     "graphology": "https://esm.sh/graphology@^0.26.0",
     "graphology-layout-forceatlas2": "https://esm.sh/graphology-layout-forceatlas2@^0.10.1",
     "graphology-communities-louvain": "https://esm.sh/graphology-communities-louvain@^2.0.2",
@@ -120,7 +116,19 @@
     "sigma": "https://esm.sh/sigma@^3.0.2",
     "sigma/": "https://esm.sh/sigma@^3.0.2/",
     "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
-    "buffer": "https://esm.sh/buffer@^6.0.3"
+    "react-pdftotext": "https://esm.sh/react-pdftotext@^1.3.4",
+    "react-hook-form": "https://esm.sh/react-hook-form@^7.68.0",
+    "@hookform/resolvers/": "https://esm.sh/@hookform/resolvers@^5.2.2/",
+    "zod": "https://esm.sh/zod@^4.2.1",
+    "@radix-ui/react-toast": "https://esm.sh/@radix-ui/react-toast@^1.2.15",
+    "clsx": "https://esm.sh/clsx@^2.1.1",
+    "tailwind-merge": "https://esm.sh/tailwind-merge@^3.4.0",
+    "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@^1.1.15",
+    "@radix-ui/react-slot": "https://esm.sh/@radix-ui/react-slot@^1.2.4",
+    "class-variance-authority": "https://esm.sh/class-variance-authority@^0.7.1",
+    "@radix-ui/react-select": "https://esm.sh/@radix-ui/react-select@^2.2.6",
+    "@radix-ui/react-alert-dialog": "https://esm.sh/@radix-ui/react-alert-dialog@^1.1.15",
+    "@radix-ui/react-label": "https://esm.sh/@radix-ui/react-label@^2.1.8"
   }
 }
 </script>

@@ -15,11 +15,11 @@ export const ML_CONFIG = {
   
   // Scout Agent: Optimized for speed and search grounding
   // Use cases: Entity extraction, document analysis, graph expansion
-  SCOUT_MODEL: 'gemini-2.0-flash-exp',  // Latest experimental model with best search
+  SCOUT_MODEL: 'gemini-2.5-flash-lite',  // Latest experimental model with best search
   
   // Architect Agent: Optimized for reasoning and code execution
   // Use cases: Network analysis, structural interpretation, metric computation
-  ARCHITECT_MODEL: 'gemini-2.0-flash-thinking-exp-1219', // Thinking mode for complex analysis
+  ARCHITECT_MODEL: 'gemini-2.5-flash', // Thinking mode for complex analysis
   
   // ============================================================================
   // THINKING CONFIGURATION

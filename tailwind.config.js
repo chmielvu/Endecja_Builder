@@ -18,7 +18,7 @@ export default {
       },
       fontFamily: {
         serif: ['"Crimson Text"', 'serif'],
-        sans: ['"Inter"', 'sans-serif'],
+        sans: ['"IBM Plex Sans"', 'sans-serif'], // Changed from "Inter"
         mono: ['"Courier Prime"', 'monospace']
       }
     },
